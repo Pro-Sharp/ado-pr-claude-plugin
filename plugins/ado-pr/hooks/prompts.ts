@@ -72,17 +72,17 @@ export function archivePrompt(pr: PrSnapshot, archiveTool: string): string {
   return `Azure DevOps PR #${pr.id} was ${outcome}. Archive this session now with the \`${archiveTool}\` tool. Take no other action.`
 }
 
-/** What `pull_request_status` answers: the snapshot as compact text for the model. */
-export function statusText(pr: PrSnapshot | null, branch: RepoBranch | null): string {
+/** What `pull_request_status` answers: this chat's PRs as compact text for the model. */
+export function statusText(prs: readonly PrSnapshot[], branch: RepoBranch | null): string {
   if (!branch) {
     return 'This session is not in an Azure Repos clone (origin is not dev.azure.com / visualstudio.com).'
   }
-  if (!pr) {
-    return `No pull request found for branch ${branch.branch} in ${branch.project}/${branch.repo}.`
+  if (prs.length === 0) {
+    return `No pull request is bound to this chat (current branch ${branch.branch} in ${branch.project}/${branch.repo}). Create one with ${TOOLS.create}, or ask the person to press Find PR.`
   }
 
   return JSON.stringify(
-    {
+    prs.map(pr => ({
       id: pr.id,
       title: pr.title,
       url: pr.url,
@@ -96,7 +96,7 @@ export function statusText(pr: PrSnapshot | null, branch: RepoBranch | null): st
       checks: pr.checks.map(({ name, state, kind, buildId, isBlocking }) => ({ name, state, kind, buildId, isBlocking })),
       reviewers: pr.votes,
       unresolvedComments: pr.comments,
-    },
+    })),
     null,
     2,
   )

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import { azErrorOf } from '../hooks/ado'
+import { createdPrIdOf, prIdsFromHistory } from '../hooks/history'
 import { parseAdoRemote } from '../hooks/remote'
 import { checksOf, commentsOf, parseShortstat, phaseOf, rollupOf, thousands } from '../hooks/status'
 
@@ -68,5 +69,30 @@ describe('status', () => {
   test('az errors read as what to do', async () => {
     expect(azErrorOf("ERROR: Please run 'az login' to setup account.")).toContain('az login')
     expect(azErrorOf('WARNING: x\nERROR: TF401019: repo not found')).toBe('TF401019: repo not found')
+  })
+})
+
+describe('history', () => {
+  test('finds PR ids in URLs, tool output and prose, in order, once each', async () => {
+    const ids = prIdsFromHistory([
+      { text: 'See https://dev.azure.com/acme/Shop/_git/web/pullrequest/233 and PR #244.', toolUses: [] },
+      {
+        text: '',
+        toolUses: [
+          { tool: 'mcp__ado-pr__create_pull_request', input: { title: 'x' }, text: 'Created PR #251: https://x/pullrequest/251' },
+          { tool: 'Bash', input: { command: 'az repos pr create --query "{id:pullRequestId}"' }, text: '{ "id": 260 }' },
+          { tool: 'Bash', input: { command: 'az boards query' }, text: '{ "id": 999 }' },
+        ],
+      },
+      { text: 'Back to pull request #233.', toolResults: [{ text: '"pullRequestId": 270' }] },
+    ])
+
+    expect(ids).toEqual([233, 244, 251, 260, 270])
+  })
+
+  test('reads the id az repos pr create printed', async () => {
+    expect(createdPrIdOf('{\n  "pullRequestId": 11,\n  "status": "active"\n}')).toBe(11)
+    expect(createdPrIdOf('{ "id": 12, "status": "active" }')).toBe(12)
+    expect(createdPrIdOf('nothing here')).toBe(null)
   })
 })

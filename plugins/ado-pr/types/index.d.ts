@@ -72,16 +72,21 @@ export type MinePr = {
   url: string
 }
 
+/** A pull request this chat created, found or linked: one bar each, kept across restarts. */
+export type PrBinding = { orgUrl: string; id: number }
+
 declare module 'claude-code' {
   interface PluginState {
     'ado-pr': {
       branch: RepoBranch | null
-      pr: PrSnapshot | null
-      /** A PR id the person bound with /ado-pr link, over the branch lookup. */
-      pinnedId: number | null
+      /** This chat's PRs, in the order they were bound. */
+      bindings: PrBinding[]
+      /** The last read of each bound PR, in binding order. */
+      prs: PrSnapshot[]
       error: string | null
       busy: string | null
-      isMenuOpen: boolean
+      /** The PR whose CI panel is open. */
+      openMenu: number | null
       isHidden: boolean
       autoFix: boolean
       autoArchive: boolean

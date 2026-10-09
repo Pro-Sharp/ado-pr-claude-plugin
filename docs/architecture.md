@@ -18,21 +18,34 @@ The Azure layer (`ado.ts`, `status.ts`, `remote.ts`) knows nothing about Claude 
 
 ## State
 
-All drawing reads from `$.state`, so a hot reload keeps what the bar shows:
+A chat's pull requests belong to the chat, not to the branch the checkout is on. Each chat keeps its list in `$.store` under its session id (the transcript's name), so the list survives restarts and never leaks into another chat of the same folder:
+
+| Store key | |
+|---|---|
+| `bindings:<session id>` | `{ orgUrl, id }` for every PR the chat created, found or linked, in that order. One bar each. |
+| `snapshots:<session id>` | the last read of each, drawn at once when a chat is re-opened, while a refresh runs |
+
+A PR is added to the chat by:
+- **Create PR** and the `create_pull_request` tool
+- Claude's own `az repos pr create` (the id is read from its output)
+- **Find PR**, which scans the chat's history for PR links and ids and keeps those of the checkout's repository
+- `/ado-pr link <id>`
+
+It is removed by **Remove from chat** in its CI panel, or `/ado-pr unlink [id]`.
+
+The session's `$.state` mirrors what the bars draw:
 
 | Key | |
 |---|---|
-| `branch` | org, project, repo and branch from `origin`, or `null` outside Azure Repos |
-| `pr` | the last `PrSnapshot` (see `types/index.d.ts`) |
-| `pinnedId` | a PR bound with `/ado-pr link`, which wins over the branch lookup until the branch changes |
+| `branch` | org, project, repo and current branch from `origin`, used for Create PR and Find PR only |
+| `bindings`, `prs` | the chat's PRs and their last read |
 | `error` | the last `az` error, already turned into an instruction |
-| `busy` | a label while a menu action runs |
-| `isMenuOpen`, `isHidden` | UI |
-| `autoFix`, `autoArchive` | the menu's switches. Auto-merge lives on the PR itself, as Azure DevOps auto-complete. |
+| `busy` | a label while an action runs |
+| `openMenu` | the PR whose CI panel is open |
+| `isHidden` | the bars were closed with × |
+| `autoFix`, `autoArchive` | the switches. Auto-merge lives on each PR, as Azure DevOps auto-complete. |
 | `mine` | rows of the `/ado-pr mine` pane |
-| `handled` | `build:<id>` and `thread:<id>` already handed to Claude, so nothing is handed over twice |
-
-Beside the session's state, the last good read for each folder is kept in `$.store` under `snapshot:<cwd>`. A chat that is re-opened, or a session whose state was lost, draws that snapshot at once while a refresh runs.
+| `handled` | `build:<id>` and `thread:<pr>:<id>` already handed to Claude, so nothing is handed over twice |
 
 ## When it reads
 
@@ -40,9 +53,11 @@ Every read has a live `$` of its own, so no single event has to fire:
 
 - 1 ms after `session.start`, then every `pollSeconds`
 - after each `prompt.submit` (at most every 15 s) and each `turn.complete` (at most every 5 s)
-- whenever the bar is drawn and the last read is older than `pollSeconds`
+- whenever the band is drawn and the last read is older than `pollSeconds`
 - after Claude's `git push` / `checkout` / `switch` / `merge` / `rebase` / `pull` and `az repos pr` commands
 - on **Refresh**, `/ado-pr refresh`, and the Claude tools
+
+A read re-reads the checkout and every bound PR. It never looks a PR up by branch.
 
 ## Flow
 

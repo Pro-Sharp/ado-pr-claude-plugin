@@ -1,6 +1,6 @@
 import type { PrSnapshot, RepoBranch } from '../types'
 
-import { fullRef, parseAdoRemote, shortRef } from './remote'
+import { parseAdoRemote, shortRef } from './remote'
 import { checksOf, commentsOf, isPrStatus, parseShortstat, votesOf } from './status'
 
 type Json = Record<string, any>
@@ -151,26 +151,11 @@ export function adoOf(host: AdoHost) {
       }
     },
 
-    /** The branch's PR: the active one, else the newest completed or abandoned. */
-    async findPrId(branch: RepoBranch): Promise<number | null> {
-      if (branch.branch === 'HEAD') {
-        return null
-      }
+    /** Which repository a PR belongs to, or `null` when the organization has no such PR. */
+    async describe(orgUrl: string, id: number): Promise<{ id: number; repo: string; project: string } | null> {
+      const pr = await az<Json>(['repos', 'pr', 'show', '--org', orgUrl, '--id', String(id)]).catch(() => null)
 
-      const list = await az<Json[]>([
-        'repos', 'pr', 'list',
-        '--org', branch.orgUrl,
-        '--project', branch.project,
-        '--repository', branch.repo,
-        '--source-branch', fullRef(branch.branch),
-        '--status', 'all',
-        '--top', '10',
-      ])
-      const prs = list ?? []
-      const active = prs.find(pr => pr.status === 'active')
-      const newest = [...prs].sort((a, b) => b.pullRequestId - a.pullRequestId)[0]
-
-      return Number((active ?? newest)?.pullRequestId) || null
+      return pr ? { id, repo: String(pr.repository?.name ?? ''), project: String(pr.repository?.project?.name ?? '') } : null
     },
 
     /** Everything the band and the menu draw, read in parallel. */

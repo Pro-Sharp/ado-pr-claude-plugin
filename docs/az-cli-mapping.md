@@ -6,7 +6,7 @@ Every feature of the GitHub PR bar, and the `az` / `git` command ado-pr runs for
 |---|---|---|
 | Find the repo | `git remote get-url origin` | Parsed for org, project and repo. HTTPS, legacy `*.visualstudio.com` and SSH v3 URLs all work. |
 | Current branch | `git rev-parse --abbrev-ref HEAD` | `git symbolic-ref refs/remotes/origin/HEAD` finds the default branch, which gets no Create PR button. |
-| Find the branch's PR | `az repos pr list --org {org} --project P --repository R --source-branch refs/heads/B --status all --top 10` | The active PR wins, otherwise the newest completed or abandoned one. |
+| Find PR (a chat's own PRs) | the chat's history (`$.session.messages()`) for `/pullrequest/<id>`, `"pullRequestId"`, `PR #<id>` and `az repos pr create` output, then `az repos pr show --org {org} --id N` for each | Only PRs of the checkout's repository are added. A chat never looks a PR up by branch. |
 | PR details: title, state, draft, auto-complete, reviewers | `az repos pr show --org {org} --id N` | `status`: `active`, `completed` or `abandoned`. `autoCompleteSetBy` is set when auto-complete is on. |
 | `+/−` lines | `git diff --shortstat <lastMergeTargetCommit>...<lastMergeSourceCommit>` | Runs `git fetch origin <src> <tgt>` once if the commits are missing. |
 | CI checks and policy status | `az repos pr policy list --org {org} --id N` | `Build` and `Status` policies count as CI. `approved`→passed, `rejected`/`broken`→failed, `running`, `queued`, `notApplicable`→skipped. `context.buildId` links to the run. |

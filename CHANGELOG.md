@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- **PRs belong to the chat, not the branch.** A chat shows the PRs it created, found or linked, kept per chat across restarts, whatever branch the folder is on. Two chats of the same repository no longer show each other's PR, and a chat never picks a PR up by branch.
+- The quick-redraw cache is per chat instead of per folder.
+
+### Added
+
+- **Several PRs per chat**, one bar each, each with its own branch, hover card and CI panel.
+- **Find PR** button and `/ado-pr find`: adds the PRs the chat's history mentions (links, ids, `az repos pr create` output) that belong to this repository. For chats from earlier versions.
+- A PR Claude opens with `az repos pr create` is added to the chat.
+- **Remove from chat** in each CI panel, and `/ado-pr unlink [id]` for one PR.
+
 ## [0.2.4] - 2026-10-09
 
 ### Fixed

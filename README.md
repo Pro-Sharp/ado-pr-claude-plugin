@@ -121,8 +121,11 @@ Running from a local clone (`--plugin-dir`, `CLAUDE_CODE_PLUGIN_DIRS`, or a mark
 
 Open a session in an Azure Repos clone.
 
-- **On a feature branch without a PR**, the bar offers **Create PR**. Claude commits and pushes the branch, writes a title and description from the diff, and opens the PR through its `create_pull_request` tool. Asking Claude for a PR in plain words does the same thing.
-- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Click **CI ▾** to open the CI panel. Both open inside the bar, which grows upward from the prompt: a mod can't draw over the chat.
+- **Each chat has its own PRs.** A chat shows a bar for every PR it created, found or linked, open or closed, whatever branch the folder is on now. Two chats of the same repository never show each other's PRs. A chat can hold several PRs (one abandoned, a newer one open, each on its own branch), one bar each.
+- **A chat without an open PR** shows the current branch with **Find PR** and **Create PR**.
+  - **Find PR** looks through the chat's own history for PR links and ids, keeps the ones from this repository, and adds a bar for each. Use it in chats from before 0.3.0.
+  - **Create PR**: Claude commits and pushes the branch, writes a title and description from the diff, and opens the PR through its `create_pull_request` tool. Asking Claude for a PR in plain words does the same. A PR Claude opens with `az repos pr create` is added too.
+- **Each bar**: hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Click **CI ▾** to open that PR's CI panel. **Remove from chat** in the panel takes the bar away. Cards and panels open inside the bar area, which grows upward from the prompt: a mod can't draw over the chat.
 - **×** hides the bar for the session. `/ado-pr show` brings it back.
 
 ### The CI popover
@@ -142,8 +145,9 @@ Open a session in an Azure Repos clone.
 | `/ado-pr` or `/ado-pr status` | Re-read and summarize the PR                                                             |
 | `/ado-pr refresh`             | Re-read now                                                                              |
 | `/ado-pr create`              | Same as the **Create PR** button                                                         |
-| `/ado-pr link <id>`           | Bind any PR to this session, for example one whose source branch you haven't checked out |
-| `/ado-pr unlink`              | Unbind it and hide the bar                                                               |
+| `/ado-pr find`                | Same as **Find PR**: add the PRs this chat's history mentions                            |
+| `/ado-pr link <id>`           | Add any PR to this chat                                                                  |
+| `/ado-pr unlink [id]`         | Remove one PR from this chat, or all of them                                             |
 | `/ado-pr fix`                 | Hand the failed builds to Claude now                                                     |
 | `/ado-pr comments`            | Hand the unresolved comments to Claude now                                               |
 | `/ado-pr mine`                | Open a pane with your PRs in this project                                                |
