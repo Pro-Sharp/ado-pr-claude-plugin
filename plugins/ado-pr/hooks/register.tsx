@@ -905,7 +905,7 @@ export const register: Register = (on, options) => {
               <Text bold>{String(pr.comments.length)}</Text>
             </Box>
           )}
-          <Box key="ado-ci" flexDirection="row" gap={1} alignItems="center">
+          <Box key="ado-ci" flexDirection="row" gap={1} alignItems="center" flexShrink={0}>
             {lines('ado-lines')}
             {rollup !== 'none' && <Text color={ciColor}>●</Text>}
             <Button

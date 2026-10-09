@@ -67,6 +67,10 @@ export const PHASE_LABEL: Record<IconPhase, string> = {
 /** One coloured run of text on a chip. */
 export type ChipPart = { text: string; color: string }
 
+/** Matched to the desktop's CI button: its height and the bar's text size, in CSS pixels. */
+export const CHIP_HEIGHT = 26
+export const CHIP_FONT_SIZE = 14
+
 export const CHIP_COLORS = { added: '#3fb950', removed: '#f85149', muted: '#8b949e' } as const
 
 const CHIP_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
@@ -84,11 +88,11 @@ const escapeXml = (text: string) =>
  * SVG so its corners, font and height are exact. The width is measured from
  * the monospace advance (0.6 em), so no text is cut.
  */
-export function chipSvg(parts: readonly ChipPart[], height = 22): { source: string; width: number; height: number } {
-  const fontSize = 12
+export function chipSvg(parts: readonly ChipPart[], height = CHIP_HEIGHT): { source: string; width: number; height: number } {
+  const fontSize = CHIP_FONT_SIZE
   const advance = fontSize * 0.6
-  const padding = 8
-  const gap = 6
+  const padding = 10
+  const gap = 8
   const chars = parts.reduce((sum, part) => sum + [...part.text].length, 0)
   const width = Math.ceil(padding * 2 + chars * advance + gap * Math.max(0, parts.length - 1))
   const runs = parts
