@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- The plugin is listed as **Azure DevOps Pull Requests Bar** (its id stays `ado-pr`, so installs, commands and saved PRs carry over).
+- New merged-PR icon: one stem, with the branch sweeping down and right into its own head (purple, black outline).
+- The README shows screenshots of the bar, the hover card, the CI panel, a merged PR and Find PR.
+
 ## [0.4.0] - 2026-10-09
 
 ### Changed

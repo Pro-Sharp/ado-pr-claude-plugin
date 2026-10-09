@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⑂ ado-pr
+# Azure DevOps Pull Requests Bar - Claude mod
 
 **Azure DevOps pull requests in Claude Code: the same PR bar the desktop app shows for GitHub, built on the Azure CLI.**
 
@@ -8,27 +8,42 @@
 [![Azure CLI](https://img.shields.io/badge/Azure%20CLI-azure--devops-0078d4)](https://learn.microsoft.com/en-us/azure/devops/cli/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+<img src="docs/contributors.png" alt="The PR bar above the prompt, with the hover card for the PR open above it" width="760">
+
 </div>
 
 When you work on a GitHub repository, Claude Code Desktop shows a bar above the prompt with the branch's pull request: its number, its `+/−` lines, a CI indicator with a dropdown, and switches for **Auto-fix CI** and **Auto-merge**. Azure Repos gets none of that.
 
-**ado-pr** is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine:
+**Azure DevOps Pull Requests Bar** (plugin id `ado-pr`) is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine.
 
-```text
-                                               ╭─ CI monitoring ─────────────── ↗ ─╮
- ╭─ ⑂ Open  CS/contoso-store #10482  2 days ─╮ │ ✓ Passed                       1  │
- │ feat(checkout): CS-4821 - Redesign th…    │ │   ✓ contoso-store                 │
- │ Jane Doe             ╭ +56 −9 ╮ ╭ 2 files ╮ │ ☑ Auto-fix CI & address comments  │
- ╰───────────────────────────────────────────╯ │ ☐ Auto-merge when ready           │
-   ↑ hover #id                                 ╰───────────────── ↑ hover or click ╯
- ⑂ #10482   contoso-store   `feature/checkout-redesign-summary-ui`   ╭ +56 −9 ╮  ● CI ▾  ×
-```
+## See it in action
 
-On the desktop the state icon is an SVG: a green pull-request icon while the PR is open, a purple merge icon once it's merged (grey for drafts, orange for abandoned).
+**A bar for the chat's pull request**, right above the prompt: state icon, `#id`, repository, source branch, `+/−` lines and the CI panel.
+
+<img src="docs/newpr.png" alt="One PR bar above the prompt" width="760">
+
+**Hover `#id`** for the summary card, as in the screenshot at the top: state, title, author, `+/−` and the number of files.
+
+**Click CI ▾** for the CI panel: build validations, policies and reviewers, and the **Auto-fix CI & address comments** and **Auto-merge when ready** switches.
+
+<img src="docs/options.png" alt="CI panel open above the PR bar" width="760">
+
+**When the PR merges** you get a notice, the icon turns purple, and **Create PR** comes back for the next one.
+
+<img src="docs/merged.png" alt="Merged PR with a notice and the Create PR row" width="760">
+
+**Older chats** offer **Find PR**, which looks through the chat's history for the pull requests it created.
+
+<img src="docs/findpr.png" alt="Find PR and Create PR on a chat without a PR" width="760">
+<img src="docs/lookforpr.png" alt="Find PR looking through the chat" width="760">
+
+**Every PR the chat has made** gets its own bar, each on its own branch. Orange is abandoned, purple is merged, green is open.
+
+<img src="docs/foundprs.png" alt="Four PR bars found in one chat" width="760">
 
 ## Features
 
-|                                               | GitHub (built into Desktop) | **ado-pr** (Azure DevOps)                                                          |
+|                                               | GitHub (built into Desktop) | **This plugin** (Azure DevOps)                                                     |
 | --------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
 | PR bar above the prompt: number, repo, branch | ✅                          | ✅ green open · grey draft · purple merged · orange abandoned                         |
 | `+added −removed` lines                       | ✅                          | ✅ from `git diff --shortstat` of the PR's merge commits                           |
@@ -40,6 +55,7 @@ On the desktop the state icon is an SVG: a green pull-request icon while the PR 
 | PR state in the sidebar for every chat        | ✅                          | ❌ not possible for a mod; `/ado-pr mine` lists your PRs in a pane instead         |
 | Live updates                                  | webhooks                    | polling (60 s by default), plus a refresh after every prompt, turn and `git push` |
 | Hover card on `#id`                           | ✅                          | ✅ state badge, title, author, `+/−`, file count                                   |
+| Several PRs per chat                          | ✅                          | ✅ one bar each, kept with the chat; **Find PR** adds the ones from older chats     |
 
 Claude also gets four tools it can call: `create_pull_request`, `pull_request_status`, `build_failure_logs` and `reply_to_pr_comment`.
 
@@ -153,7 +169,7 @@ Open a session in an Azure Repos clone.
 
 ## Configuration
 
-`/config` shows these options under **ado-pr**. You can also set them in `settings.json` under `pluginConfigs["ado-pr"].options`.
+`/config` shows these options under **Azure DevOps Pull Requests Bar** (`ado-pr`). You can also set them in `settings.json` under `pluginConfigs["ado-pr"].options`.
 
 | Option               | Default   |                                                                                                         |
 | -------------------- | --------- | ------------------------------------------------------------------------------------------------------- |

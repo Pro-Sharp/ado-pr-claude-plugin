@@ -27,13 +27,13 @@ const PULL_REQUEST = [
   '<path d="M13 3.5L10.5 6L13 8.5"/>',
 ].join('')
 
-/** One stem with a branch leaving it and curving up into a second head. */
+/** One stem; a branch leaves its top head and sweeps down and right into a third head. */
 const MERGE = [
-  ring(7, 5),
-  ring(17, 5),
-  ring(7, 19),
-  '<path d="M7 7.6V16.4"/>',
-  '<path d="M7 15C7 12 8.6 10.6 11.5 10.6H13C15.4 10.6 17 9.4 17 7.6"/>',
+  ring(6.5, 4.5),
+  ring(6.5, 19.5),
+  ring(17.5, 15),
+  '<path d="M6.5 7.1V16.9"/>',
+  '<path d="M7.6 6.9C8.4 11.6 11.4 14.4 14.9 14.95"/>',
 ].join('')
 
 export function iconSvg(phase: IconPhase, size = 16): string {

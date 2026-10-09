@@ -1,10 +1,13 @@
 {
   "name": "ado-pr",
+  "displayName": "Azure DevOps Pull Requests Bar",
   "version": "0.4.0",
-  "description": "Azure DevOps pull requests above the prompt: the branch's PR, its +/- lines, build validation (CI) status, comments, auto-complete, auto-fix of failed builds and review comments, and a Create PR button, all through the Azure CLI (az repos / az pipelines).",
+  "description": "Azure DevOps pull requests above the prompt: each chat's PRs, their +/- lines, build validation (CI) status, comments, auto-complete, auto-fix of failed builds and review comments, and a Create PR button, all through the Azure CLI (az repos / az pipelines).",
   "author": {
     "name": "Adam Kovacs"
   },
+  "homepage": "https://github.com/Pro-Sharp/ado-pr-claude-plugin#readme",
+  "repository": "https://github.com/Pro-Sharp/ado-pr-claude-plugin",
   "license": "MIT",
   "keywords": ["azure-devops", "pull-request", "ci", "az-cli", "mod"],
   "types": "./types/index.d.ts",

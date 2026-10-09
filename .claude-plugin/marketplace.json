@@ -7,6 +7,7 @@
   "plugins": [
     {
       "name": "ado-pr",
+      "displayName": "Azure DevOps Pull Requests Bar",
       "source": "./plugins/ado-pr",
       "description": "Azure DevOps pull requests above the prompt, built on the Azure CLI: PR status, +/- lines, CI, comments, auto-complete, auto-fix and Create PR."
     }
