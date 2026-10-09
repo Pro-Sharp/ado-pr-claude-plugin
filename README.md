@@ -33,8 +33,9 @@ The whole feature set works in **CLI as well.**
 
 <img src="docs/options-cli.png" alt="CI panel open above the PR bar in Claude Code CLI" width="760">
 
-
 **Hover `#id`** for the summary card, as in the screenshot at the top: state, title, author, `+/−` and the number of files.
+
+<img src="docs/contributors.png" alt="Hover panel on #id" width="760">
 
 **Click CI ▾** for the CI panel: build validations, policies and reviewers, and the **Auto-fix CI & address comments** and **Auto-merge when ready** switches.
 
