@@ -1,0 +1,14 @@
+{
+  "name": "azure-devops-pr",
+  "owner": { "name": "Adam Kovacs" },
+  "metadata": {
+    "description": "Claude Code mods for Azure DevOps: pull request status, build validation and review comments above the prompt."
+  },
+  "plugins": [
+    {
+      "name": "ado-pr",
+      "source": "./plugins/ado-pr",
+      "description": "Azure DevOps pull requests above the prompt, built on the Azure CLI: PR status, +/- lines, CI, comments, auto-complete, auto-fix and Create PR."
+    }
+  ]
+}

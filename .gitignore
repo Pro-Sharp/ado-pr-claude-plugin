@@ -1,0 +1,10 @@
+# Written by Claude Code each time it loads the mod; regenerated, never committed
+plugins/*/.claude-plugin/types/
+plugins/*/tsconfig.json
+
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Original screenshots kept at the root while drafting; docs/images holds the published copies
+/*.png

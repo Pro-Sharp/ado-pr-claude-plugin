@@ -1,0 +1,42 @@
+{
+  "name": "ado-pr",
+  "version": "0.1.0",
+  "description": "Azure DevOps pull requests above the prompt: the branch's PR, its +/- lines, build validation (CI) status, comments, auto-complete, auto-fix of failed builds and review comments, and a Create PR button, all through the Azure CLI (az repos / az pipelines).",
+  "author": {
+    "name": "Adam Kovacs"
+  },
+  "license": "MIT",
+  "keywords": ["azure-devops", "pull-request", "ci", "az-cli", "mod"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "pollSeconds": {
+      "type": "number",
+      "title": "Refresh interval (seconds)",
+      "description": "How often the PR, its builds and its comments are re-read while a PR is shown. 0 turns polling off (refresh with /ado-pr refresh).",
+      "required": false,
+      "default": 60
+    },
+    "mergeStrategy": {
+      "type": "string",
+      "title": "Merge strategy for auto-complete",
+      "description": "How \"Auto-merge when ready\" completes the PR: squash, or a merge commit (noFastForward).",
+      "required": false,
+      "default": "squash",
+      "options": ["squash", "noFastForward"]
+    },
+    "deleteSourceBranch": {
+      "type": "boolean",
+      "title": "Delete source branch on merge",
+      "description": "Passed to az repos pr update --delete-source-branch when auto-complete is turned on.",
+      "required": false,
+      "default": true
+    },
+    "azPython": {
+      "type": "string",
+      "title": "Azure CLI python.exe (Windows only)",
+      "description": "Path of the python.exe bundled with the Azure CLI. Empty: the standard MSI install locations are tried, then az through cmd.",
+      "required": false,
+      "default": ""
+    }
+  }
+}
