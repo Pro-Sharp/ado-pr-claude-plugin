@@ -8,7 +8,7 @@ import type { Ado, CreatePrInput } from './ado'
 import { createdPrIdOf, prIdsFromHistory } from './history'
 import { CHIP_COLORS, chipSvg, commentSvg, ICON_ALT, iconSvg, PHASE_LABEL } from './icons'
 import type { ChipPart } from './icons'
-import { archivePrompt, buildFailurePrompt, commentsPrompt, createPrPrompt, failureText, statusText } from './prompts'
+import { buildFailurePrompt, commentsPrompt, createPrPrompt, failureText, statusText } from './prompts'
 import { agoOf, isPrStatus, phaseOf, rollupOf, tallyOf, thousands } from './status'
 
 type $ = EngineInterface
@@ -23,7 +23,6 @@ const busyAtom = atom({ plugin: 'ado-pr', key: 'busy' } as const, null)
 const openMenuAtom = atom({ plugin: 'ado-pr', key: 'openMenu' } as const, null)
 const hiddenAtom = atom({ plugin: 'ado-pr', key: 'isHidden' } as const, false)
 const autoFixAtom = atom({ plugin: 'ado-pr', key: 'autoFix' } as const, false)
-const autoArchiveAtom = atom({ plugin: 'ado-pr', key: 'autoArchive' } as const, false)
 const mineAtom = atom({ plugin: 'ado-pr', key: 'mine' } as const, null)
 const handledAtom = atom({ plugin: 'ado-pr', key: 'handled' } as const, [])
 
@@ -52,6 +51,9 @@ const STATE_COLOR: Record<CheckState, string> = {
 }
 
 const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', closed: 'warning' } as const
+
+/** The space between two bars on the desktop, in rows: about 8px (a row is ~20px there). */
+const ROW_GAP = 0.4
 
 /** The hover group of one PR's #id and its card. */
 const cardScopeOf = (id: number) => `ado-pr-card-${id}`
@@ -252,12 +254,6 @@ async function refreshOnce($: $) {
 async function react($: $, ado: Ado, previous: PrSnapshot | null, pr: PrSnapshot) {
   if (previous?.status === 'active' && pr.status !== 'active') {
     $.ui.toast(`PR #${pr.id} ${pr.status === 'completed' ? 'merged' : 'abandoned'}`)
-
-    const prs = await read($, prsAtom)
-
-    if ((await read($, autoArchiveAtom)) && prs.every(one => one.status !== 'active')) {
-      await archive($, pr)
-    }
   }
   if (previous && previous.isAutoComplete !== pr.isAutoComplete) {
     $.ui.status(pr.isAutoComplete ? `PR #${pr.id}: auto-complete on` : undefined)
@@ -303,17 +299,6 @@ async function addressComments($: $, pr: PrSnapshot, isForced = false) {
   return fresh.length
 }
 
-/** The desktop app lends Claude a tool that archives the session; elsewhere there is none. */
-async function archive($: $, pr: PrSnapshot) {
-  const tools = await $.tool.list().catch(() => [])
-  const tool = tools.map(t => t.name).find(name => /archive_session$/.test(name))
-
-  if (tool) {
-    await $.prompt.submit({ text: archivePrompt(pr, tool) })
-  } else {
-    $.ui.toast('This surface has no session archive; archive it from the sidebar.')
-  }
-}
 
 async function withBusy<T>($: $, label: string, work: () => Promise<T>): Promise<T | undefined> {
   await update($, busyAtom, () => label)
@@ -754,7 +739,6 @@ export const register: Register = (on, options) => {
     const busy = await read($, busyAtom)
     const openMenu = await read($, openMenuAtom)
     const autoFix = await read($, autoFixAtom)
-    const autoArchive = await read($, autoArchiveAtom)
     const now = await $.clock.now()
     const { Box, Text, Button, Link, Markdown } = $.ui.resolve(e)
 
@@ -931,12 +915,6 @@ export const register: Register = (on, options) => {
                   : `   Completes (${config.mergeStrategy}) once every required policy passes.`}
               </Text>
             )}
-            <Button
-              key={`ado-autoarchive-${pr.id}`}
-              plain
-              label={`${box(autoArchive)} Auto-archive on merge or close`}
-              onPress={() => update($, autoArchiveAtom, isOn => !isOn)}
-            />
           </Box>
           <Box flexDirection="row" gap={1} marginTop={1}>
             <Button key={`ado-refresh-${pr.id}`} label="Refresh" onPress={() => refresh($)} />
@@ -997,7 +975,8 @@ export const register: Register = (on, options) => {
       return [card, panel, row]
     }
 
-    // Without an open PR, the chat can find one in its history or create one on its branch.
+    // Without an open PR, the chat can create one on its branch; a chat with no PR
+    // at all (one from before 0.3.0) can also find the ones its history mentions.
     const hasActive = prs.some(pr => pr.status === 'active')
     const actions =
       branch && !hasActive && !branch.isDefault ? (
@@ -1006,15 +985,17 @@ export const register: Register = (on, options) => {
           {branchCode('ado-branch-current', branch.branch)}
           <Box flexGrow={1} />
           {busy && <Text color="warning">{`${busy}…`}</Text>}
-          <Button
-            key="ado-find"
-            label="Find PR"
-            onPress={() =>
-              withBusy($, 'Looking through this chat', async () => {
-                $.ui.toast(await findPrs($))
-              })
-            }
-          />
+          {prs.length === 0 && (
+            <Button
+              key="ado-find"
+              label="Find PR"
+              onPress={() =>
+                withBusy($, 'Looking through this chat', async () => {
+                  $.ui.toast(await findPrs($))
+                })
+              }
+            />
+          )}
           <Button key="ado-create" label="Create PR" variant="primary" onPress={() => $.prompt.submit({ text: createPrPrompt(branch) })} />
           {close}
         </Box>
@@ -1036,12 +1017,16 @@ export const register: Register = (on, options) => {
       return next(e)
     }
 
+    // Rows breathe on the desktop by a few pixels; the terminal has no unit smaller than a row.
+    const gap = (key: string) => (e.surface === 'desktop' ? <Box key={key} height={ROW_GAP} /> : null)
+
     // A band clips whatever it draws to itself, so each card and CI panel opens
     // inside it, above its own row: the band grows upward from the prompt.
     return (
       <Box key="ado-band" flexDirection="column">
         {errorRow}
-        {prs.flatMap((pr, i) => prBlock(pr, i === prs.length - 1 && !actions))}
+        {prs.flatMap((pr, i) => [i > 0 ? gap(`ado-gap-${pr.id}`) : null, ...prBlock(pr, i === prs.length - 1 && !actions)])}
+        {actions && prs.length > 0 ? gap('ado-gap-actions') : null}
         {actions}
       </Box>
     )

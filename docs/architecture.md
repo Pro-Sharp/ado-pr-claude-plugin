@@ -9,7 +9,7 @@ plugins/ado-pr/
 │   ├── ado.ts                   the az/git layer; takes an exec function, so tests can stand in for it
 │   ├── status.ts                pure: policy → check, rollup, comments, shortstat, phase
 │   ├── remote.ts                pure: Azure Repos remote URL parsing
-│   └── prompts.ts               what Claude is asked for Create PR, auto-fix, comments, archive
+│   └── prompts.ts               what Claude is asked for Create PR, auto-fix and comments
 ├── types/index.d.ts             $.state contract (PluginState['ado-pr'])
 └── tests/                       claude plugin test: unit tests plus a mounted band on terminal and desktop
 ```
@@ -43,7 +43,7 @@ The session's `$.state` mirrors what the bars draw:
 | `busy` | a label while an action runs |
 | `openMenu` | the PR whose CI panel is open |
 | `isHidden` | the bars were closed with × |
-| `autoFix`, `autoArchive` | the switches. Auto-merge lives on each PR, as Azure DevOps auto-complete. |
+| `autoFix` | the auto-fix switch. Auto-merge lives on each PR, as Azure DevOps auto-complete. |
 | `mine` | rows of the `/ado-pr mine` pane |
 | `handled` | `build:<id>` and `thread:<pr>:<id>` already handed to Claude, so nothing is handed over twice |
 
@@ -71,14 +71,11 @@ sequenceDiagram
   participant C as Claude
 
   S->>R: $.clock.after(1) and $.clock.every(pollSeconds)
-  R->>A: remote, branch → pr list → pr show, policy list, threads, shortstat
+  R->>A: remote, branch, then per bound PR: pr show, policy list, threads, shortstat
   A-->>R: JSON
-  R->>St: branch, pr, error
+  R->>St: branch, prs, error
   St-->>B: redraw (readers subscribed)
   R->>R: react(previous, next)
-  alt PR merged or abandoned and autoArchive
-    R->>C: $.prompt.submit(archive)
-  end
   alt autoFix and a build failed (not yet handled)
     R->>A: timeline + logs
     R->>C: $.prompt.submit(build failure)

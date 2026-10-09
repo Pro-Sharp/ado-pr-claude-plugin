@@ -212,6 +212,12 @@ describe('register', () => {
       expect(await ui.find({ key: 'ado-bar-77' })).toBeUndefined()
       expect(await ui.find({ text: /feature\/old/ })).toBeDefined()
       expect(await ui.find({ text: /feature\/checkout/ })).toBeDefined()
+      // An open PR among them: neither Find PR nor Create PR.
+      expect(await ui.find({ key: 'ado-find' })).toBeUndefined()
+      expect(await ui.find({ key: 'ado-create' })).toBeUndefined()
+      if (surface === 'desktop') {
+        expect((await ui.find({ key: 'ado-gap-42' }))?.props.height).toBe(0.4)
+      }
       await ui.unmount()
     }
   })

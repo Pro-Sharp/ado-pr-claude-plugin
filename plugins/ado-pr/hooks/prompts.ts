@@ -66,12 +66,6 @@ export function commentsPrompt(pr: PrSnapshot, comments: readonly PrComment[]): 
   ].join('\n')
 }
 
-export function archivePrompt(pr: PrSnapshot, archiveTool: string): string {
-  const outcome = pr.status === 'completed' ? 'merged' : 'abandoned'
-
-  return `Azure DevOps PR #${pr.id} was ${outcome}. Archive this session now with the \`${archiveTool}\` tool. Take no other action.`
-}
-
 /** What `pull_request_status` answers: this chat's PRs as compact text for the model. */
 export function statusText(prs: readonly PrSnapshot[], branch: RepoBranch | null): string {
   if (!branch) {

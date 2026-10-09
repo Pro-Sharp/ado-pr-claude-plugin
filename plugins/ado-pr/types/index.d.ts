@@ -89,7 +89,6 @@ declare module 'claude-code' {
       openMenu: number | null
       isHidden: boolean
       autoFix: boolean
-      autoArchive: boolean
       /** The signed-in person's PRs in the project, for the /ado-pr mine pane. */
       mine: MinePr[] | null
       /** Failed builds and comment threads already handed to Claude. */

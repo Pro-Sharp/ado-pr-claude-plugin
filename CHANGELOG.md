@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- On the desktop, the PR bars, and the Create PR row below them, have a small gap between them (0.4 of a row, about 8px).
+- **Find PR** shows only in a chat with no PR yet. Once a chat has PRs, the row under them offers **Create PR** alone, and only while none of them is open.
+
 ## [0.3.0] - 2026-10-09
 
 ### Changed
@@ -69,7 +74,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - PR bar above the prompt: state icon (open, draft, merged, abandoned), `#id` link, repo, branch, `+/−` lines, CI dot, unresolved comment count.
-- CI menu: build validation and status checks with counts and run links, policy and reviewer summary, and the **Auto-fix CI & address comments**, **Auto-merge when ready** (Azure DevOps auto-complete) and **Auto-archive on merge or close** switches.
+- CI menu: build validation and status checks with counts and run links, policy and reviewer summary, and the **Auto-fix CI & address comments** and **Auto-merge when ready** (Azure DevOps auto-complete) switches.
 - **Create PR** button and `/ado-pr create`: Claude pushes the branch, writes the title and description, and opens the PR.
 - Claude's tools: `create_pull_request`, `pull_request_status`, `build_failure_logs`, `reply_to_pr_comment`.
 - `/ado-pr` commands: `status`, `refresh`, `create`, `link`, `unlink`, `fix`, `comments`, `mine`, `show`.

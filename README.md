@@ -10,7 +10,7 @@
 
 </div>
 
-When you work on a GitHub repository, Claude Code Desktop shows a bar above the prompt with the branch's pull request: its number, its `+/−` lines, a CI indicator with a dropdown, and switches for **Auto-fix CI**, **Auto-merge** and **Auto-archive**. Azure Repos gets none of that.
+When you work on a GitHub repository, Claude Code Desktop shows a bar above the prompt with the branch's pull request: its number, its `+/−` lines, a CI indicator with a dropdown, and switches for **Auto-fix CI** and **Auto-merge**. Azure Repos gets none of that.
 
 **ado-pr** is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine:
 
@@ -37,7 +37,6 @@ On the desktop the state icon is an SVG: a green pull-request icon while the PR 
 | Auto-fix CI                                   | ✅                          | ✅ failed build logs (errors and log tail) handed to Claude                        |
 | Address review comments                       | ✅                          | ✅ unresolved threads handed to Claude, who replies and resolves them              |
 | Auto-merge when ready                         | ✅                          | ✅ Azure DevOps **auto-complete** (squash or merge commit, optional branch delete) |
-| Auto-archive on merge or close                | ✅                          | ⚠️ best effort: see [Limitations](#limitations)                                    |
 | PR state in the sidebar for every chat        | ✅                          | ❌ not possible for a mod; `/ado-pr mine` lists your PRs in a pane instead         |
 | Live updates                                  | webhooks                    | polling (60 s by default), plus a refresh after every prompt, turn and `git push` |
 | Hover card on `#id`                           | ✅                          | ✅ state badge, title, author, `+/−`, file count                                   |
@@ -134,7 +133,6 @@ Open a session in an Azure Repos clone.
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Auto-fix CI & address comments**    | Each build validation that fails is handed to Claude **once**, with the failed steps, their `##[error]` lines and the log tail. Unresolved review threads are handed over too. Claude fixes the code, pushes, and replies on each thread. Turning it on also acts on what is already failing or open. |
 | **Auto-merge when ready**             | Turns Azure DevOps **auto-complete** on or off (`az repos pr update --auto-complete`). The PR then completes by itself once every required policy passes.                                                                                                                                             |
-| **Auto-archive on merge or close**    | When the PR completes or is abandoned, asks Claude to archive the session. See [Limitations](#limitations).                                                                                                                                                                                           |
 | **Fix CI now** / **Address comments** | Run the same hand-over once, on demand.                                                                                                                                                                                                                                                               |
 | **Publish draft**                     | Takes a draft PR out of draft.                                                                                                                                                                                                                                                                        |
 
@@ -190,7 +188,6 @@ The mod has no server and handles no tokens. Every call is an `az` or `git` comm
 ## Limitations
 
 - **Sidebar badges.** Desktop draws the PR state in the sidebar for GitHub sessions, but the sidebar is part of the desktop app itself, not something a mod can draw. `/ado-pr mine` is the substitute.
-- **Auto-archive.** No mod API archives a session. In the desktop app, Claude has a session-archive tool, so the mod asks Claude to use it, and the desktop may ask you to approve. Where that tool doesn't exist (terminal), you get a toast instead.
 - **Events are polled.** GitHub sessions get webhook-driven events. Azure DevOps service hooks can't reach a local session, so the mod re-reads every `pollSeconds` and right after any `git push`, `git checkout`/`switch` or `az repos pr` command Claude runs.
 - **`+/−` needs the commits locally.** When the PR's commits aren't in your clone, the mod fetches them once. If the fetch fails, the counts are left out.
 - **No Create PR on the default branch.** Create a feature branch first.

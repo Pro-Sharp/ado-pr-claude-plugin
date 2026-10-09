@@ -35,7 +35,7 @@ What can be seen from the outside, through the published type declarations and t
 
 - **The `gh` CLI does the work.** Claude runs `gh pr create`, `gh pr view` and so on through its Bash tool. The engine classifies each git/gh command it sees and attaches a structured `gitOperation` record to the Bash result (`commit`, `push`, `branch`, and `pr: { number, url, action: created | merged | closed | auto-merge-enabled | … }`). The desktop reads that record to discover a PR without parsing stdout.
 - **The desktop binds the PR to the session.** It has its own session tools (`bind_pr`, `get_status`, `set_auto_merge`, `set_monitor`, `unbind_pr`). These are desktop tools, not mod APIs, and they speak only GitHub.
-- **Events arrive by webhook.** A GitHub relay delivers subscribed events (`pull_request.closed`, `check_suite`, review comments) to the session as external-event wakes (`source: github`). Auto-fix and address-comments start a turn from those wakes. Auto-archive archives the session when a merge or close arrives.
+- **Events arrive by webhook.** A GitHub relay delivers subscribed events (`pull_request.closed`, `check_suite`, review comments) to the session as external-event wakes (`source: github`). Auto-fix and address-comments start a turn from those wakes.
 - **The sidebar badge** comes from the same binding and is drawn by the desktop shell.
 
 ## What the mod API gives us
@@ -47,7 +47,7 @@ What can be seen from the outside, through the published type declarations and t
 | Run `az` and `git` | `$.process.run(argv)`: no shell, runs as you | Every Azure DevOps call |
 | Session state that survives hot reloads | `$.state` atoms, declared in `types/index.d.ts` | PR snapshot, toggles, handled items |
 | Polling | `$.clock.every` started in `session.start` | Refreshes |
-| Start a turn | `$.prompt.submit` | Create PR, auto-fix, address comments, archive |
+| Start a turn | `$.prompt.submit` | Create PR, auto-fix, address comments |
 | Give Claude tools | `$.tool.register` + `tool.call` hooks | `create_pull_request`, `pull_request_status`, `build_failure_logs`, `reply_to_pr_comment` |
 | React to Claude's commands | `tool.call` on `Bash`, after `next(e)` | Refresh after `git push` / `az repos pr` |
 | Toasts and status | `$.ui.toast`, `$.ui.status` | Merge notices |
@@ -55,7 +55,6 @@ What can be seen from the outside, through the published type declarations and t
 What it does **not** give us:
 
 - The desktop sidebar. A mod cannot draw there.
-- A session-archive call. In the desktop app, Claude has a session-archive tool. ado-pr asks Claude to call it and falls back to a toast elsewhere.
 - Inbound webhooks. Azure DevOps service hooks would need a public endpoint, so ado-pr polls.
 
 ## Gotchas found while building it
