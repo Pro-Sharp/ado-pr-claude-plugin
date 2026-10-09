@@ -32,7 +32,7 @@
       "title": "Delete source branch on merge",
       "description": "Passed to az repos pr update --delete-source-branch when auto-complete is turned on.",
       "required": false,
-      "default": true
+      "default": false
     },
     "azPython": {
       "type": "string",

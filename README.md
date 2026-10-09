@@ -175,7 +175,7 @@ Open a session in an Azure Repos clone.
 | -------------------- | --------- | ------------------------------------------------------------------------------------------------------- |
 | `pollSeconds`        | `60`      | How often the PR, its builds and its comments are re-read. `0` turns polling off.                       |
 | `mergeStrategy`      | `squash`  | `squash` or `noFastForward` (a merge commit), used by **Auto-merge when ready**.                        |
-| `deleteSourceBranch` | `true`    | Delete the source branch when auto-complete merges.                                                     |
+| `deleteSourceBranch` | `false`    | Delete the source branch when auto-complete merges.                                                     |
 | `azPython`           | _(empty)_ | Windows only: path to the Azure CLI's bundled `python.exe`, when it isn't in the standard MSI location. |
 
 ## How it works

@@ -61,7 +61,7 @@ const cardScopeOf = (id: number) => `ado-pr-card-${id}`
 const messageOf = (error: unknown) => String((error as Error)?.message ?? error)
 
 /** The manifest's userConfig, as register received it. */
-const config = { pollSeconds: 60, mergeStrategy: 'squash', deleteSourceBranch: true, azPython: '' }
+const config = { pollSeconds: 60, mergeStrategy: 'squash', deleteSourceBranch: false, azPython: '' }
 
 let azPrefix: readonly string[] | null = null
 let tail: Promise<void> = Promise.resolve()
