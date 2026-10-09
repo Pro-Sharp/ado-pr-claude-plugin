@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-09
+
+### Changed
+
+- Abandoned PRs are orange (icon, badge and `#id`) instead of red.
+- The CI panel opens only on click, no longer on hover.
+- While the CI panel is open, hovering `#id` no longer opens the summary card, so the bar stops flickering.
+- On the desktop, the `+/−` and file-count chips are rounded `#383838` pills in bold monospace, sized to match the CI button and sitting next to it.
+- The unresolved-comment count uses an SVG speech bubble (white inside, black outline) instead of an emoji.
+
 ## [0.2.1] - 2026-10-09
 
 ### Changed
@@ -41,6 +51,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/releases/tag/v0.2.0
