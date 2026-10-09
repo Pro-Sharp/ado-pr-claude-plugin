@@ -116,10 +116,14 @@ describe('register', () => {
         expect(await ui.find({ text: '−206' })).toBeDefined()
       }
 
+      if (surface === 'desktop') {
+        // The CI state sits inside the button, as a coloured emoji.
+        expect((await ui.find({ key: 'ado-ci-button-42' }))?.props.label).toBe('🟢 CI ▾')
+      }
       await ui.press({ key: 'ado-ci-button-42' })
       expect(await ui.find({ text: /Passed/ })).toBeDefined()
       expect(await ui.find({ text: /web-ci/ })).toBeDefined()
-      expect(await ui.find({ text: /ready to merge now/ })).toBeDefined()
+      expect(await ui.find({ text: /Ready to merge now/ })).toBeDefined()
 
       if (surface === 'desktop') {
         await ui.press({ key: 'ado-automerge-42' })

@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- On the desktop the CI state sits inside the CI button, as 🟢 / 🔴 / 🟡 before `CI ▾`, instead of a separate dot beside it.
+- The CI panel shows whole without scrolling. Its lines no longer wrap: the policy summary is split into three short lines, long ones are cut with an ellipsis, the panel is a little wider, and it has half a row more room at the bottom.
+
 ## [0.4.2] - 2026-10-09
 
 ### Changed

@@ -52,6 +52,9 @@ const STATE_COLOR: Record<CheckState, string> = {
 
 const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', closed: 'warning' } as const
 
+/** The CI state inside the CI button's label on the desktop: an emoji keeps its own colour where a label's text cannot have one. */
+const CI_DOT = { passed: '🟢', failed: '🔴', running: '🟡' } as const
+
 /** The space between two bars on the desktop, in rows: about 8px (a row is ~20px there). */
 const ROW_GAP = 0.4
 
@@ -741,6 +744,7 @@ export const register: Register = (on, options) => {
     const autoFix = await read($, autoFixAtom)
     const now = await $.clock.now()
     const { Box, Text, Button, Link, Markdown } = $.ui.resolve(e)
+    const isDesktop = e.surface === 'desktop'
 
     const close = <Button key="ado-close" label="×" plain role="dismiss" onPress={() => update($, hiddenAtom, () => true)} />
     const branchCode = (key: string, name: string) => <Markdown key={key} text={'`' + name + '`'} />
@@ -861,21 +865,26 @@ export const register: Register = (on, options) => {
         <Box
           key={`ado-ci-panel-${pr.id}`}
           alignSelf="flex-end"
-          width={Math.min(52, Math.max(36, e.props.bodyColumns - 2))}
+          width={Math.min(60, Math.max(40, e.props.bodyColumns - 2))}
           marginBottom={1}
           flexDirection="column"
           paddingX={2}
-          paddingY={1}
+          paddingTop={1}
+          paddingBottom={1.5}
           borderStyle="round"
           borderColor="inactive"
         >
           <Box flexDirection="row" gap={1}>
-            <Text dimColor>{`CI monitoring · #${pr.id}`}</Text>
+            <Text dimColor wrap="truncate">{`CI monitoring · #${pr.id}`}</Text>
             <Box flexGrow={1} />
             {busy && <Text color="warning">{`${busy}…`}</Text>}
             <Link href={pr.url}>↗</Link>
           </Box>
-          {ci.length === 0 && <Text dimColor>No build validation on this PR.</Text>}
+          {ci.length === 0 && (
+            <Text dimColor wrap="truncate">
+              No build validation on this PR.
+            </Text>
+          )}
           {tallyOf(ci).map(([state, count]) => (
             <Box key={`tally-${pr.id}-${state}`} flexDirection="row" gap={1}>
               <Text color={STATE_COLOR[state]}>{STATE_ICON[state]}</Text>
@@ -888,16 +897,19 @@ export const register: Register = (on, options) => {
             <Box key={`check-${pr.id}-${check.id}`} flexDirection="row" gap={1} paddingLeft={2}>
               <Text color={STATE_COLOR[check.state]}>{STATE_ICON[check.state]}</Text>
               {check.buildId !== null ? (
-                <Link href={`${pr.orgUrl}/${pr.project}/_build/results?buildId=${check.buildId}`}>{check.name}</Link>
+                <Text wrap="truncate">
+                  <Link href={`${pr.orgUrl}/${pr.project}/_build/results?buildId=${check.buildId}`}>{check.name}</Link>
+                </Text>
               ) : (
-                <Text>{check.name}</Text>
+                <Text wrap="truncate">{check.name}</Text>
               )}
               {!check.isBlocking && <Text dimColor>(optional)</Text>}
             </Box>
           ))}
-          <Text dimColor>
-            {`Policies ${policies.filter(p => p.state === 'passed').length}/${policies.length} · ${votes} · ${pr.comments.length} open comment${pr.comments.length === 1 ? '' : 's'}`}
-          </Text>
+          {/* One fact a line, never wrapped: the band sizes itself by line count, so a wrapped line would need scrolling. */}
+          <Text dimColor wrap="truncate">{`Policies ${policies.filter(p => p.state === 'passed').length}/${policies.length} met`}</Text>
+          <Text dimColor wrap="truncate">{`Reviewers ${votes}`}</Text>
+          <Text dimColor wrap="truncate">{`${pr.comments.length} open comment${pr.comments.length === 1 ? '' : 's'}`}</Text>
           <Box flexDirection="column" marginTop={1}>
             <Button key={`ado-autofix-${pr.id}`} plain label={`${box(autoFix)} Auto-fix CI & address comments`} onPress={() => toggleAutoFix($)} />
             {isActive && (
@@ -909,10 +921,8 @@ export const register: Register = (on, options) => {
               />
             )}
             {isActive && (
-              <Text dimColor>
-                {isReady
-                  ? '   PR is ready to merge now — nothing to wait for.'
-                  : `   Completes (${config.mergeStrategy}) once every required policy passes.`}
+              <Text dimColor wrap="truncate">
+                {isReady ? '   Ready to merge now.' : `   Completes (${config.mergeStrategy}) once required policies pass.`}
               </Text>
             )}
           </Box>
@@ -961,10 +971,10 @@ export const register: Register = (on, options) => {
           )}
           <Box key={`ado-ci-${pr.id}`} flexDirection="row" gap={1} alignItems="center" flexShrink={0}>
             {lines(`ado-lines-${pr.id}`)}
-            {rollup !== 'none' && <Text color={ciColor}>●</Text>}
+            {rollup !== 'none' && !isDesktop && <Text color={ciColor}>●</Text>}
             <Button
               key={`ado-ci-button-${pr.id}`}
-              label={isMenuOpen ? 'CI ▴' : 'CI ▾'}
+              label={`${isDesktop && rollup !== 'none' ? `${CI_DOT[rollup]} ` : ''}CI ${isMenuOpen ? '▴' : '▾'}`}
               onPress={() => update($, openMenuAtom, open => (open === pr.id ? null : pr.id))}
             />
           </Box>
