@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-09
+
+### Changed
+
+- **Auto-merge when ready** no longer deletes the source branch by default: `deleteSourceBranch` defaults to `false`. Set it to `true` in `/config` to keep the old behaviour.
+
 ## [0.4.1] - 2026-10-09
 
 ### Changed
@@ -92,7 +98,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.4...v0.3.0

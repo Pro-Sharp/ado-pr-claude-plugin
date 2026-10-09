@@ -1,7 +1,7 @@
 {
   "name": "ado-pr",
   "displayName": "Azure DevOps Pull Requests Bar",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Azure DevOps pull requests above the prompt: each chat's PRs, their +/- lines, build validation (CI) status, comments, auto-complete, auto-fix of failed builds and review comments, and a Create PR button, all through the Azure CLI (az repos / az pipelines).",
   "author": {
     "name": "Adam Kovacs"
