@@ -124,7 +124,7 @@ describe('register', () => {
       if (surface === 'desktop') {
         await ui.press({ key: 'ado-automerge-42' })
         const update = calls.find(argv => argv.join(' ').includes('repos pr update'))
-        expect(update).toEqual(expect.arrayContaining(['--auto-complete', 'true', '--squash', 'true', '--delete-source-branch', 'true']))
+        expect(update).toEqual(expect.arrayContaining(['--auto-complete', 'true', '--squash', 'true', '--delete-source-branch', 'false']))
       } else {
         await ui.press({ key: 'ado-ci-button-42' })
       }

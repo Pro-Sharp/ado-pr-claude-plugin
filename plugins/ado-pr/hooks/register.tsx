@@ -429,7 +429,7 @@ const summaryOf = (pr: PrSnapshot) =>
 export const register: Register = (on, options) => {
   config.pollSeconds = Math.max(0, Number(options.pollSeconds ?? 60))
   config.mergeStrategy = String(options.mergeStrategy ?? 'squash')
-  config.deleteSourceBranch = options.deleteSourceBranch !== false
+  config.deleteSourceBranch = options.deleteSourceBranch === true
   config.azPython = String(options.azPython ?? '').trim()
 
   on('session.start', async ($, e, next) => {
