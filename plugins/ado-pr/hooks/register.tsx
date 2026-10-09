@@ -6,7 +6,8 @@ import type { CheckState, MinePr, PrSnapshot, RepoBranch } from '../types'
 import { adoOf } from './ado'
 import type { Ado, CreatePrInput } from './ado'
 import { archivePrompt, buildFailurePrompt, commentsPrompt, createPrPrompt, failureText, statusText } from './prompts'
-import { isPrStatus, phaseOf, rollupOf, tallyOf, thousands } from './status'
+import { ICON_ALT, iconSvg, PHASE_LABEL } from './icons'
+import { agoOf, isPrStatus, phaseOf, rollupOf, tallyOf, thousands } from './status'
 
 type $ = EngineInterface
 
@@ -51,6 +52,13 @@ const STATE_COLOR: Record<CheckState, string> = {
 
 const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', closed: 'error' } as const
 
+/** Hover groups: #id with its card, the CI button with its popover. */
+const CARD_SCOPE = 'ado-pr-card'
+const CI_SCOPE = 'ado-pr-ci'
+
+/** The page's own colour in either theme (black on dark, white on light), so a popover hides what it covers. */
+const POPOVER_BG = 'inverseText'
+
 const messageOf = (error: unknown) => String((error as Error)?.message ?? error)
 
 /** The manifest's userConfig, as register received it. */
@@ -60,6 +68,52 @@ let azPrefix: readonly string[] | null = null
 let tail: Promise<void> = Promise.resolve()
 let waiting = 0
 let poll: Timer | null = null
+let lastKickAt = 0
+
+/** What the last good read found in a folder, kept across sessions so a re-opened chat draws at once. */
+type Remembered = { branch: RepoBranch | null; pr: PrSnapshot | null }
+
+const memoryKeyOf = (cwd: string) => `snapshot:${cwd.split('\\').join('/').toLowerCase()}`
+
+async function remember($: $, value: Remembered) {
+  try {
+    await $.store.set(memoryKeyOf(await $.session.cwd()), value)
+  } catch {
+    // A cache only: the next read writes it again.
+  }
+}
+
+async function recall($: $): Promise<Remembered | null> {
+  try {
+    const value = (await $.store.get(memoryKeyOf(await $.session.cwd()))) as Remembered | undefined
+
+    return value && typeof value === 'object' ? value : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Starts a refresh on the clock, so it outlives the dispatch that asked for
+ * it (a draw, a finished turn); at most one per `minMs`.
+ */
+async function kick($: $, minMs = 15_000) {
+  const now = await $.clock.now()
+
+  if (now - lastKickAt < minMs) {
+    return
+  }
+
+  lastKickAt = now
+
+  try {
+    $.clock.after(0, () => {
+      void refresh($)
+    })
+  } catch {
+    // The poll and the next prompt read again.
+  }
+}
 
 /** How the Azure CLI starts here: `az`, or on Windows its bundled python in UTF-8 mode. */
 async function azPrefixOf($: $): Promise<readonly string[]> {
@@ -129,6 +183,7 @@ async function refreshOnce($: $) {
     if (!branch) {
       await update($, prAtom, () => null)
       await update($, errorAtom, () => null)
+      await remember($, { branch: null, pr: null })
 
       return
     }
@@ -143,6 +198,7 @@ async function refreshOnce($: $) {
     if (id === null) {
       await update($, prAtom, () => null)
       await update($, errorAtom, () => null)
+      await remember($, { branch, pr: null })
 
       return
     }
@@ -151,9 +207,10 @@ async function refreshOnce($: $) {
 
     await update($, prAtom, () => pr)
     await update($, errorAtom, () => null)
+    await remember($, { branch, pr })
     await react($, ado, previous?.id === pr.id ? previous : null, pr)
   } catch (error) {
-    await update($, errorAtom, () => messageOf(error))
+    await update($, errorAtom, () => messageOf(error)).catch(() => undefined)
   }
 }
 
@@ -371,9 +428,7 @@ export const register: Register = (on, options) => {
       poll?.cancel()
       poll = $.clock.every(config.pollSeconds * 1000, () => {
         void (async () => {
-          const branch = await read($, branchAtom)
-
-          if (branch && !(await read($, hiddenAtom))) {
+          if (!(await read($, hiddenAtom))) {
             await refresh($)
           }
         })()
@@ -388,6 +443,22 @@ export const register: Register = (on, options) => {
     poll = null
 
     return next(e)
+  })
+
+  // Each prompt and each finished turn reads again (throttled), so the bar
+  // never depends on one timer or one event having run.
+  on('prompt.submit', async ($, e, next) => {
+    const submitted = await next(e)
+    await kick($)
+
+    return submitted
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    const done = await next(e)
+    await kick($, 5_000)
+
+    return done
   })
 
   // A push, a branch switch or Claude's own `az repos pr` call: read again.
@@ -563,27 +634,34 @@ export const register: Register = (on, options) => {
       return next(e)
     }
 
-    const branch = await read($, branchAtom)
+    // A draw is a sign someone is looking: read again when the data is stale.
+    await kick($, Math.max(15, config.pollSeconds || 60) * 1000)
+
+    const live = await read($, branchAtom)
+    const remembered = live ? null : await recall($)
+    const branch = live ?? remembered?.branch ?? null
 
     if (!branch) {
       return next(e)
     }
 
-    const pr = await read($, prAtom)
+    const pr = live ? await read($, prAtom) : (remembered?.pr ?? null)
     const error = await read($, errorAtom)
     const busy = await read($, busyAtom)
-    const { Box, Text, Button, Link } = $.ui.resolve(e)
+    const isDesktop = e.surface === 'desktop'
+    const { Box, Text, Button, Link, Markdown } = $.ui.resolve(e)
 
-    const close = (
-      <Button key="ado-close" label="×" plain role="dismiss" onPress={() => update($, hiddenAtom, () => true)} />
-    )
+    const close = <Button key="ado-close" label="×" plain role="dismiss" onPress={() => update($, hiddenAtom, () => true)} />
+    const branchCode = <Markdown key="ado-branch" text={'`' + branch.branch + '`'} />
 
     if (!pr) {
       if (error) {
         return (
-          <Box flexDirection="row" gap={1}>
-            <Text color="error">⑂ Azure DevOps:</Text>
-            <Text dimColor wrap="truncate">{error}</Text>
+          <Box flexDirection="row" gap={2}>
+            <Text color="error">⑂ Azure DevOps</Text>
+            <Text dimColor wrap="truncate">
+              {error}
+            </Text>
             <Button key="ado-retry" label="Retry" onPress={() => refresh($)} />
             {close}
           </Box>
@@ -594,16 +672,11 @@ export const register: Register = (on, options) => {
       }
 
       return (
-        <Box flexDirection="row" gap={1}>
-          <Text dimColor>⑂</Text>
+        <Box flexDirection="row" gap={2} alignItems="center">
           <Text dimColor>{branch.repo}</Text>
-          <Text dimColor wrap="truncate">{branch.branch}</Text>
-          <Button
-            key="ado-create"
-            label="Create PR"
-            variant="primary"
-            onPress={() => $.prompt.submit({ text: createPrPrompt(branch) })}
-          />
+          {branchCode}
+          <Box flexGrow={1} />
+          <Button key="ado-create" label="Create PR" variant="primary" onPress={() => $.prompt.submit({ text: createPrPrompt(branch) })} />
           {close}
         </Box>
       )
@@ -613,122 +686,213 @@ export const register: Register = (on, options) => {
     const rollup = rollupOf(pr.checks)
     const isMenuOpen = await read($, menuAtom)
     const ciColor = rollup === 'passed' ? 'success' : rollup === 'failed' ? 'error' : rollup === 'running' ? 'warning' : 'inactive'
+    const now = await $.clock.now()
 
-    const bar = (
-      <Box key="ado-bar" flexDirection="row" gap={1}>
+    const icon = (size: number) => {
+      if (e.surface === 'desktop') {
+        const { Svg } = $.ui.resolve(e)
+
+        return <Svg source={iconSvg(phase, size)} alt={ICON_ALT[phase]} width={size} height={size} />
+      }
+
+      return (
         <Text color={PHASE_COLOR[phase]} bold>
           ⑂
         </Text>
-        <Link href={pr.url}>{`#${pr.id}`}</Link>
-        <Text dimColor>{pr.repo}</Text>
-        <Text dimColor wrap="truncate">
-          {pr.sourceBranch}
+      )
+    }
+
+    // The +/− lines, framed on the desktop (a border costs the terminal two rows).
+    const lines = (key: string) =>
+      pr.additions === null || pr.deletions === null ? null : (
+        <Box
+          key={key}
+          flexDirection="row"
+          gap={1}
+          paddingX={isDesktop ? 1 : 0}
+          borderStyle={isDesktop ? 'round' : undefined}
+          borderColor="inactive"
+        >
+          <Text color="diffAdded">{`+${thousands(pr.additions)}`}</Text>
+          <Text color="diffRemoved">{`−${thousands(pr.deletions)}`}</Text>
+        </Box>
+      )
+
+    // The card over the bar while #id is hovered, as GitHub's.
+    const card = (
+      <Box
+        key="ado-card"
+        position="absolute"
+        bottom={1}
+        left={0}
+        width={Math.min(64, Math.max(40, e.props.bodyColumns - 4))}
+        display="none"
+        hover={{ scope: CARD_SCOPE, display: 'flex' }}
+        flexDirection="column"
+        gap={1}
+        paddingX={2}
+        paddingY={1}
+        borderStyle="round"
+        borderColor="inactive"
+        backgroundColor={POPOVER_BG}
+      >
+        <Box flexDirection="row" gap={2} alignItems="center">
+          <Box flexDirection="row" gap={1} paddingX={1} borderStyle="round" borderColor={PHASE_COLOR[phase]}>
+            {icon(14)}
+            <Text color={PHASE_COLOR[phase]}>{PHASE_LABEL[phase]}</Text>
+          </Box>
+          <Text dimColor wrap="truncate">{`${pr.project}/${pr.repo} #${pr.id}`}</Text>
+          <Box flexGrow={1} />
+          <Text dimColor>{agoOf(pr.createdAt, now)}</Text>
+        </Box>
+        <Text bold wrap="truncate">
+          {pr.title}
         </Text>
-        {phase !== 'open' && <Text color={PHASE_COLOR[phase]}>{phase}</Text>}
-        <Box flexGrow={1} />
-        {pr.additions !== null && <Text color="diffAdded">{`+${thousands(pr.additions)}`}</Text>}
-        {pr.deletions !== null && <Text color="diffRemoved">{`−${thousands(pr.deletions)}`}</Text>}
-        {pr.comments.length > 0 && <Text color="warning">{`💬 ${pr.comments.length}`}</Text>}
-        {rollup !== 'none' && <Text color={ciColor}>●</Text>}
-        <Button key="ado-ci" label={isMenuOpen ? 'CI ▴' : 'CI ▾'} onPress={() => update($, menuAtom, isOpen => !isOpen)} />
-        {close}
+        <Box flexDirection="row" gap={2} alignItems="center">
+          <Text dimColor wrap="truncate">
+            {pr.author}
+          </Text>
+          <Box flexGrow={1} />
+          {lines('ado-card-lines')}
+          {pr.files !== null && (
+            <Box paddingX={isDesktop ? 1 : 0} borderStyle={isDesktop ? 'round' : undefined} borderColor="inactive">
+              <Text dimColor>{`${pr.files} file${pr.files === 1 ? '' : 's'}`}</Text>
+            </Box>
+          )}
+        </Box>
       </Box>
     )
-
-    if (!isMenuOpen) {
-      return bar
-    }
 
     const autoFix = await read($, autoFixAtom)
     const autoArchive = await read($, autoArchiveAtom)
     const ci = pr.checks.filter(check => check.kind === 'ci')
     const policies = pr.checks.filter(check => check.kind === 'policy')
     const isActive = pr.status === 'active'
-    const isReady = isActive && pr.mergeStatus === 'succeeded' && pr.checks.every(c => !c.isBlocking || c.state === 'passed' || c.state === 'skipped')
+    const isReady =
+      isActive && pr.mergeStatus === 'succeeded' && pr.checks.every(c => !c.isBlocking || c.state === 'passed' || c.state === 'skipped')
     const box = (isOn: boolean) => (isOn ? '☑' : '☐')
+    const votes = `${pr.votes.approved} approved, ${pr.votes.waiting} waiting${pr.votes.rejected ? `, ${pr.votes.rejected} rejected` : ''}`
 
-    return (
-      <Box flexDirection="column">
-        {bar}
-        <Box key="ado-menu" flexDirection="column" paddingLeft={2} marginTop={1}>
-          <Box flexDirection="row" gap={1}>
-            <Text bold>CI monitoring</Text>
-            <Link href={pr.url}>open ↗</Link>
-            {busy && <Text color="warning">{`${busy}…`}</Text>}
+    // The CI popover: over the bar at its right end, shown on hover, kept open by a click.
+    const popover = (
+      <Box
+        key="ado-ci-popover"
+        position="absolute"
+        bottom={1}
+        right={0}
+        width={Math.min(52, Math.max(36, e.props.bodyColumns - 2))}
+        display={isMenuOpen ? 'flex' : 'none'}
+        hover={isMenuOpen ? { scope: CI_SCOPE } : { scope: CI_SCOPE, display: 'flex' }}
+        flexDirection="column"
+        paddingX={2}
+        paddingY={1}
+        borderStyle="round"
+        borderColor="inactive"
+        backgroundColor={POPOVER_BG}
+      >
+        <Box flexDirection="row" gap={1}>
+          <Text dimColor>CI monitoring</Text>
+          <Box flexGrow={1} />
+          {busy && <Text color="warning">{`${busy}…`}</Text>}
+          <Link href={pr.url}>↗</Link>
+        </Box>
+        {ci.length === 0 && <Text dimColor>No build validation on this PR.</Text>}
+        {tallyOf(ci).map(([state, count]) => (
+          <Box key={`tally-${state}`} flexDirection="row" gap={1}>
+            <Text color={STATE_COLOR[state]}>{STATE_ICON[state]}</Text>
+            <Text>{STATE_LABEL[state]}</Text>
+            <Box flexGrow={1} />
+            <Text dimColor>{String(count)}</Text>
           </Box>
-          {ci.length === 0 && <Text dimColor>No build validation on this PR.</Text>}
-          {tallyOf(ci).map(([state, count]) => (
-            <Box key={`tally-${state}`} flexDirection="row" gap={1}>
-              <Text color={STATE_COLOR[state]}>{STATE_ICON[state]}</Text>
-              <Text>{STATE_LABEL[state]}</Text>
-              <Text dimColor>{String(count)}</Text>
-            </Box>
-          ))}
-          {ci.map(check => (
-            <Box key={`check-${check.id}`} flexDirection="row" gap={1} paddingLeft={2}>
-              <Text color={STATE_COLOR[check.state]}>{STATE_ICON[check.state]}</Text>
-              {check.buildId !== null ? (
-                <Link href={`${pr.orgUrl}/${pr.project}/_build/results?buildId=${check.buildId}`}>{check.name}</Link>
-              ) : (
-                <Text>{check.name}</Text>
-              )}
-              {!check.isBlocking && <Text dimColor>(optional)</Text>}
-            </Box>
-          ))}
-          {policies.length > 0 && (
+        ))}
+        {ci.map(check => (
+          <Box key={`check-${check.id}`} flexDirection="row" gap={1} paddingLeft={2}>
+            <Text color={STATE_COLOR[check.state]}>{STATE_ICON[check.state]}</Text>
+            {check.buildId !== null ? (
+              <Link href={`${pr.orgUrl}/${pr.project}/_build/results?buildId=${check.buildId}`}>{check.name}</Link>
+            ) : (
+              <Text>{check.name}</Text>
+            )}
+            {!check.isBlocking && <Text dimColor>(optional)</Text>}
+          </Box>
+        ))}
+        <Text dimColor>
+          {`Policies ${policies.filter(p => p.state === 'passed').length}/${policies.length} · ${votes} · ${pr.comments.length} open comment${pr.comments.length === 1 ? '' : 's'}`}
+        </Text>
+        <Box flexDirection="column" marginTop={1}>
+          <Button key="ado-autofix" plain label={`${box(autoFix)} Auto-fix CI & address comments`} onPress={() => toggleAutoFix($)} />
+          {isActive && (
+            <Button
+              key="ado-automerge"
+              plain
+              label={`${box(pr.isAutoComplete)} Auto-merge when ready`}
+              onPress={() => toggleAutoMerge($)}
+            />
+          )}
+          {isActive && (
             <Text dimColor>
-              {`Policies: ${policies.filter(p => p.state === 'passed').length}/${policies.length} met · reviewers ${pr.votes.approved} approved, ${pr.votes.waiting} waiting${pr.votes.rejected ? `, ${pr.votes.rejected} rejected` : ''}`}
+              {isReady
+                ? '   PR is ready to merge now — nothing to wait for.'
+                : `   Completes (${config.mergeStrategy}) once every required policy passes.`}
             </Text>
           )}
-          <Text dimColor>{`Comments: ${pr.comments.length} unresolved`}</Text>
-          <Box flexDirection="column" marginTop={1}>
-            <Button
-              key="ado-autofix"
-              plain
-              label={`${box(autoFix)} Auto-fix CI & address comments`}
-              onPress={() => toggleAutoFix($)}
-            />
-            {isActive && (
-              <Button
-                key="ado-automerge"
-                plain
-                label={`${box(pr.isAutoComplete)} Auto-merge when ready`}
-                onPress={() => toggleAutoMerge($)}
-              />
-            )}
-            {isActive && (
-              <Text dimColor>
-                {isReady
-                  ? '   PR is ready to merge now — nothing to wait for.'
-                  : `   Completes (${config.mergeStrategy}) once every required policy passes.`}
-              </Text>
-            )}
-            <Button
-              key="ado-autoarchive"
-              plain
-              label={`${box(autoArchive)} Auto-archive on merge or close`}
-              onPress={() => update($, autoArchiveAtom, isOn => !isOn)}
-            />
-          </Box>
-          <Box flexDirection="row" gap={1} marginTop={1}>
-            <Button key="ado-refresh" label="Refresh" onPress={() => refresh($)} />
-            {isActive && rollup === 'failed' && (
-              <Button key="ado-fix" label="Fix CI now" onPress={() => withBusy($, 'Reading failures', async () => fixFailures($, await adoFor($), pr, true))} />
-            )}
-            {isActive && pr.comments.length > 0 && (
-              <Button key="ado-comments" label="Address comments" onPress={() => addressComments($, pr, true)} />
-            )}
-            {isActive && pr.isDraft && (
-              <Button
-                key="ado-publish"
-                label="Publish draft"
-                onPress={() =>
-                  withBusy($, 'Publishing', async () => (await adoFor($)).setDraft(pr.orgUrl, pr.id, false)).then(() => refresh($))
-                }
-              />
-            )}
-          </Box>
+          <Button
+            key="ado-autoarchive"
+            plain
+            label={`${box(autoArchive)} Auto-archive on merge or close`}
+            onPress={() => update($, autoArchiveAtom, isOn => !isOn)}
+          />
         </Box>
+        <Box flexDirection="row" gap={1} marginTop={1}>
+          <Button key="ado-refresh" label="Refresh" onPress={() => refresh($)} />
+          {isActive && rollup === 'failed' && (
+            <Button
+              key="ado-fix"
+              label="Fix CI now"
+              onPress={() => withBusy($, 'Reading failures', async () => fixFailures($, await adoFor($), pr, true))}
+            />
+          )}
+          {isActive && pr.comments.length > 0 && (
+            <Button key="ado-comments" label="Address comments" onPress={() => addressComments($, pr, true)} />
+          )}
+          {isActive && pr.isDraft && (
+            <Button
+              key="ado-publish"
+              label="Publish draft"
+              onPress={() =>
+                withBusy($, 'Publishing', async () => (await adoFor($)).setDraft(pr.orgUrl, pr.id, false)).then(() => refresh($))
+              }
+            />
+          )}
+        </Box>
+      </Box>
+    )
+
+    return (
+      <Box key="ado-bar" flexDirection="row" gap={2} alignItems="center">
+        <Box key="ado-id" flexDirection="row" gap={1} alignItems="center">
+          {card}
+          {icon(16)}
+          <Text hover={{ scope: CARD_SCOPE, underline: true }} color={PHASE_COLOR[phase]}>
+            <Link href={pr.url}>{`#${pr.id}`}</Link>
+          </Text>
+        </Box>
+        <Text dimColor>{pr.repo}</Text>
+        <Box flexShrink={1}>{branchCode}</Box>
+        <Box flexGrow={1} />
+        {pr.comments.length > 0 && <Text color="warning">{`💬 ${pr.comments.length}`}</Text>}
+        {lines('ado-lines')}
+        <Box key="ado-ci" flexDirection="row" alignItems="center">
+          {popover}
+          {rollup !== 'none' && <Text color={ciColor}>●</Text>}
+          <Button
+            key="ado-ci-button"
+            label={isMenuOpen ? 'CI ▴' : 'CI ▾'}
+            hover={{ scope: CI_SCOPE, color: ciColor }}
+            onPress={() => update($, menuAtom, isOpen => !isOpen)}
+          />
+        </Box>
+        {close}
       </Box>
     )
   })

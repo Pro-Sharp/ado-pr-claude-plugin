@@ -32,6 +32,18 @@ All drawing reads from `$.state`, so a hot reload keeps what the bar shows:
 | `mine` | rows of the `/ado-pr mine` pane |
 | `handled` | `build:<id>` and `thread:<id>` already handed to Claude, so nothing is handed over twice |
 
+Beside the session's state, the last good read for each folder is kept in `$.store` under `snapshot:<cwd>`. A chat that is re-opened, or a session whose state was lost, draws that snapshot at once while a refresh runs.
+
+## When it reads
+
+Every read has a live `$` of its own, so no single event has to fire:
+
+- 1 ms after `session.start`, then every `pollSeconds`
+- after each `prompt.submit` (at most every 15 s) and each `turn.complete` (at most every 5 s)
+- whenever the bar is drawn and the last read is older than `pollSeconds`
+- after Claude's `git push` / `checkout` / `switch` / `merge` / `rebase` / `pull` and `az repos pr` commands
+- on **Refresh**, `/ado-pr refresh`, and the Claude tools
+
 ## Flow
 
 ```mermaid

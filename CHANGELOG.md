@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- PR state icons drawn as SVG on the desktop: the pull-request icon (green open, grey draft, red abandoned) and the merge icon (purple), each with a black outline.
+- Hover card on `#id`, as on GitHub: state badge, `project/repo #id`, age, title, author, `+/−` and file count.
+
+### Changed
+
+- The bar has wider spacing, a code-styled branch name and a rounded box around `+/−` on the desktop.
+- The CI menu is a popover over the bar: it opens on hover, a click keeps it open, and it no longer pushes the bar up.
+
+### Fixed
+
+- The bar no longer disappears after you leave a chat and come back. The last snapshot per folder is kept in `$.store` and drawn at once, and a draw with stale data starts a refresh.
+- The bar no longer stays empty after a failed first read. Polling now retries even when no branch was ever read, and each prompt and finished turn refreshes as well (throttled).
+
 ## [0.1.0] - 2026-10-09
 
 ### Added

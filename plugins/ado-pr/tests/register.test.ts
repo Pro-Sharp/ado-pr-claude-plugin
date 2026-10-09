@@ -12,6 +12,8 @@ const PR = {
   lastMergeSourceCommit: { commitId: 'aaa' },
   lastMergeTargetCommit: { commitId: 'bbb' },
   reviewers: [{ vote: 10, isRequired: true }],
+  createdBy: { displayName: 'Ann Author' },
+  creationDate: '2026-09-01T10:00:00Z',
   repository: { id: 'r1', name: 'web', webUrl: 'https://dev.azure.com/acme/Shop/_git/web', project: { name: 'Shop' } },
 }
 
@@ -39,6 +41,7 @@ describe('register', () => {
     const calls: string[][] = []
     mock.clock(on)
     mock.env(on, {})
+    mock.store(on, {})
     on('session.start', ($, e) => ({ cwd: e.cwd }))
     on('session.cwd', () => ({ value: '/work' }))
     on('command.register', ($, e) => ({ value: { command: e.name } }))
@@ -78,10 +81,17 @@ describe('register', () => {
       const ui = await $.ui.mount({ plugin: 'ado-pr', surface, ...BAND })
 
       expect(await ui.find({ text: '#42' })).toBeDefined()
+      expect(await ui.find({ key: 'ado-card' })).toBeDefined()
+      expect(await ui.find({ text: /shop\/web #42|Shop\/web #42/ })).toBeDefined()
+      expect(await ui.find({ text: /12 files/ })).toBeDefined()
+      expect(await ui.find({ text: /Ann Author/ })).toBeDefined()
+      if (surface === 'desktop') {
+        expect(await ui.find({ type: 'Svg' })).toBeDefined()
+      }
       expect(await ui.find({ text: '+1,264' })).toBeDefined()
       expect(await ui.find({ text: '−206' })).toBeDefined()
 
-      await ui.press({ key: 'ado-ci' })
+      await ui.press({ key: 'ado-ci-button' })
       expect(await ui.find({ text: /Passed/ })).toBeDefined()
       expect(await ui.find({ text: /web-ci/ })).toBeDefined()
       expect(await ui.find({ text: /ready to merge now/ })).toBeDefined()
@@ -91,7 +101,7 @@ describe('register', () => {
         const update = calls.find(argv => argv.join(' ').includes('repos pr update'))
         expect(update).toEqual(expect.arrayContaining(['--auto-complete', 'true', '--squash', 'true', '--delete-source-branch', 'true']))
       } else {
-        await ui.press({ key: 'ado-ci' })
+        await ui.press({ key: 'ado-ci-button' })
       }
 
       await ui.unmount()
@@ -101,6 +111,7 @@ describe('register', () => {
   test('outside an Azure Repos clone the band draws nothing of its own', async ($, on) => {
     mock.clock(on)
     mock.env(on, {})
+    mock.store(on, {})
     on('session.start', ($, e) => ({ cwd: e.cwd }))
     on('session.cwd', () => ({ value: '/work' }))
     on('command.register', ($, e) => ({ value: { command: e.name } }))

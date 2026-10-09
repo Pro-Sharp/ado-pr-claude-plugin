@@ -15,18 +15,16 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
 **ado-pr** is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine:
 
 ```text
- ⑂ #10482  contoso-store  feature/checkout-redesign-summary-ui        +56 −9  ● [ CI ▾ ]  ×
-   CI monitoring  open ↗
-   ✓ Passed 1
-     ✓ contoso-store
-   Policies: 3/6 met · reviewers 2 approved, 2 waiting
-   Comments: 0 unresolved
-   ☑ Auto-fix CI & address comments
-   ☐ Auto-merge when ready
-      Completes (squash) once every required policy passes.
-   ☐ Auto-archive on merge or close
-   [ Refresh ]
+                                              ╭─ CI monitoring ─────────────── ↗ ─╮
+ ╭─ ⑂ Open  CS/contoso-store #10482  2 days ─╮ │ ✓ Passed                       1  │
+ │ feat(checkout): CS-4821 - Redesign th…    │ │   ✓ contoso-store                 │
+ │ Jane Doe             ╭ +56 −9 ╮ ╭ 2 files ╮ │ ☑ Auto-fix CI & address comments  │
+ ╰───────────────────────────────────────────╯ │ ☐ Auto-merge when ready           │
+   ↑ hover #id                                  ╰───────────────── ↑ hover or click ╯
+ ⑂ #10482   contoso-store   `feature/checkout-redesign-summary-ui`   ╭ +56 −9 ╮  ● CI ▾  ×
 ```
+
+On the desktop the state icon is an SVG: a green pull-request icon while the PR is open, a purple merge icon once it's merged (grey for drafts, red for abandoned).
 
 ## Features
 
@@ -41,7 +39,8 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
 | Auto-merge when ready                         | ✅                          | ✅ Azure DevOps **auto-complete** (squash or merge commit, optional branch delete) |
 | Auto-archive on merge or close                | ✅                          | ⚠️ best effort: see [Limitations](#limitations)                                    |
 | PR state in the sidebar for every chat        | ✅                          | ❌ not possible for a mod; `/ado-pr mine` lists your PRs in a pane instead         |
-| Live updates                                  | webhooks                    | polling (60 s by default), plus a refresh after every `git push`                   |
+| Live updates                                  | webhooks                    | polling (60 s by default), plus a refresh after every prompt, turn and `git push` |
+| Hover card on `#id`                           | ✅                          | ✅ state badge, title, author, `+/−`, file count                                   |
 
 Claude also gets four tools it can call: `create_pull_request`, `pull_request_status`, `build_failure_logs` and `reply_to_pr_comment`.
 
@@ -107,10 +106,10 @@ Load a local clone in every session, desktop included. Add this to `~/.claude/se
 Open a session in an Azure Repos clone.
 
 - **On a feature branch without a PR**, the bar offers **Create PR**. Claude commits and pushes the branch, writes a title and description from the diff, and opens the PR through its `create_pull_request` tool. Asking Claude for a PR in plain words does the same thing.
-- **With a PR**, the bar shows it. Click `#id` to open it in Azure DevOps, and **CI ▾** to open the menu.
+- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Hover **CI ▾** to see the CI popover, and click it to keep the popover open.
 - **×** hides the bar for the session. `/ado-pr show` brings it back.
 
-### The CI menu
+### The CI popover
 
 | Control                               | What it does                                                                                                                                                                                                                                                                                          |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
