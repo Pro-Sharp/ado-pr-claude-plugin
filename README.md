@@ -272,6 +272,9 @@ Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING
 
 [MIT](LICENSE) © Adam Kovacs
 
+## Star History
+
+[![Star History Chart](https://app.repohistory.com/api/svg?repo=Pro-Sharp/ado-pr-claude-plugin&type=Timeline&background=0D1117&color=b562f8)](https://app.repohistory.com/star-history)
 ---
 
 <sub>Not affiliated with or endorsed by Anthropic or Microsoft. "Claude" is a trademark of Anthropic. "Azure DevOps" is a trademark of Microsoft. Mods run with Claude Code's access to your machine, so read the source before you install any of them, this one included.</sub>
