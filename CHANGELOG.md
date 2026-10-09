@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-09
+
+### Changed
+
+- The `#id` hover card and the CI panel open inside the bar, which grows upward from the prompt. A mod can't draw outside its band, so in 0.2.0 they were cut off.
+- The `+/−` and file-count chips are one line tall with a `#383838` background and no border.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added
@@ -34,5 +41,6 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/releases/tag/v0.2.0
