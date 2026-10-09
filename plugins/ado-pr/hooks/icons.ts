@@ -10,7 +10,7 @@ const COLORS: Record<IconPhase, string> = {
   open: '#3fb950',
   draft: '#8b949e',
   merged: '#a371f7',
-  closed: '#f85149',
+  closed: '#f0883e',
 }
 
 const OUTLINE = '#000000'
@@ -62,4 +62,60 @@ export const PHASE_LABEL: Record<IconPhase, string> = {
   draft: 'Draft',
   merged: 'Merged',
   closed: 'Abandoned',
+}
+
+/** One coloured run of text on a chip. */
+export type ChipPart = { text: string; color: string }
+
+export const CHIP_COLORS = { added: '#3fb950', removed: '#f85149', muted: '#8b949e' } as const
+
+const CHIP_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+
+/** Escapes markup and writes non-ASCII (the `−` sign) as character references, whatever encoding the SVG is read in. */
+const escapeXml = (text: string) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/[^\x20-\x7e]/gu, char => `&#x${(char.codePointAt(0) ?? 0x3f).toString(16)};`)
+
+/**
+ * A rounded pill of bold monospace runs (`+1,264 −206`, `7 files`), drawn as
+ * SVG so its corners, font and height are exact. The width is measured from
+ * the monospace advance (0.6 em), so no text is cut.
+ */
+export function chipSvg(parts: readonly ChipPart[], height = 22): { source: string; width: number; height: number } {
+  const fontSize = 12
+  const advance = fontSize * 0.6
+  const padding = 8
+  const gap = 6
+  const chars = parts.reduce((sum, part) => sum + [...part.text].length, 0)
+  const width = Math.ceil(padding * 2 + chars * advance + gap * Math.max(0, parts.length - 1))
+  const runs = parts
+    .map((part, i) => `<tspan${i > 0 ? ` dx="${gap}"` : ''} fill="${part.color}">${escapeXml(part.text)}</tspan>`)
+    .join('')
+
+  return {
+    width,
+    height,
+    source:
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">` +
+      `<rect width="${width}" height="${height}" rx="6" fill="#383838"/>` +
+      `<text x="${padding}" y="${height / 2}" dominant-baseline="central" font-family="${CHIP_FONT}" ` +
+      `font-size="${fontSize}" font-weight="700">${runs}</text>` +
+      '</svg>',
+  }
+}
+
+/** A speech bubble with three dots: white inside, black outline. */
+export function commentSvg(size = 16): string {
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">` +
+    '<path d="M6 3.5H18A3 3 0 0 1 21 6.5V14A3 3 0 0 1 18 17H10.5L6.5 21V17H6A3 3 0 0 1 3 14V6.5A3 3 0 0 1 6 3.5Z" ' +
+    'fill="#ffffff" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>' +
+    '<circle cx="8" cy="10.25" r="1.4" fill="#000000"/>' +
+    '<circle cx="12" cy="10.25" r="1.4" fill="#000000"/>' +
+    '<circle cx="16" cy="10.25" r="1.4" fill="#000000"/>' +
+    '</svg>'
+  )
 }

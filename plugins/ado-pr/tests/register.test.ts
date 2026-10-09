@@ -83,13 +83,21 @@ describe('register', () => {
       expect(await ui.find({ text: '#42' })).toBeDefined()
       expect(await ui.find({ key: 'ado-card' })).toBeDefined()
       expect(await ui.find({ text: /shop\/web #42|Shop\/web #42/ })).toBeDefined()
-      expect(await ui.find({ text: /12 files/ })).toBeDefined()
       expect(await ui.find({ text: /Ann Author/ })).toBeDefined()
       if (surface === 'desktop') {
-        expect(await ui.find({ type: 'Svg' })).toBeDefined()
+        // The chips are SVG pills on the desktop: their text is in the source and the alt.
+        const alts = (await ui.findAll({ type: 'Svg' })).map(svg => String(svg.props.alt))
+        expect(alts).toContain('+1,264 −206')
+        expect(alts).toContain('12 files')
+        expect(alts).toContain('Open pull request')
+        const pill = (await ui.findAll({ type: 'Svg' })).find(svg => svg.props.alt === '+1,264 −206')
+        expect(String(pill?.props.source)).toContain('#383838')
+        expect(String(pill?.props.source)).toContain('&#x2212;206')
+      } else {
+        expect(await ui.find({ text: /12 files/ })).toBeDefined()
+        expect(await ui.find({ text: '+1,264' })).toBeDefined()
+        expect(await ui.find({ text: '−206' })).toBeDefined()
       }
-      expect(await ui.find({ text: '+1,264' })).toBeDefined()
-      expect(await ui.find({ text: '−206' })).toBeDefined()
 
       await ui.press({ key: 'ado-ci-button' })
       expect(await ui.find({ text: /Passed/ })).toBeDefined()

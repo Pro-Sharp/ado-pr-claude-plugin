@@ -24,13 +24,13 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
  ⑂ #10482   contoso-store   `feature/checkout-redesign-summary-ui`   ╭ +56 −9 ╮  ● CI ▾  ×
 ```
 
-On the desktop the state icon is an SVG: a green pull-request icon while the PR is open, a purple merge icon once it's merged (grey for drafts, red for abandoned).
+On the desktop the state icon is an SVG: a green pull-request icon while the PR is open, a purple merge icon once it's merged (grey for drafts, orange for abandoned).
 
 ## Features
 
 |                                               | GitHub (built into Desktop) | **ado-pr** (Azure DevOps)                                                          |
 | --------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
-| PR bar above the prompt: number, repo, branch | ✅                          | ✅ green open · grey draft · purple merged · red abandoned                         |
+| PR bar above the prompt: number, repo, branch | ✅                          | ✅ green open · grey draft · purple merged · orange abandoned                         |
 | `+added −removed` lines                       | ✅                          | ✅ from `git diff --shortstat` of the PR's merge commits                           |
 | CI dot and dropdown with check counts         | ✅                          | ✅ build validation and status policies, each linked to its run                    |
 | **Create PR** button                          | ✅                          | ✅ Claude pushes, writes the title and description, opens the PR                   |
@@ -122,7 +122,7 @@ Running from a local clone (`--plugin-dir`, `CLAUDE_CODE_PLUGIN_DIRS`, or a mark
 Open a session in an Azure Repos clone.
 
 - **On a feature branch without a PR**, the bar offers **Create PR**. Claude commits and pushes the branch, writes a title and description from the diff, and opens the PR through its `create_pull_request` tool. Asking Claude for a PR in plain words does the same thing.
-- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Hover **CI ▾** to see the CI panel, and click it to keep the panel open. Both open inside the bar, which grows upward from the prompt: a mod can't draw over the chat.
+- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Click **CI ▾** to open the CI panel. Both open inside the bar, which grows upward from the prompt: a mod can't draw over the chat.
 - **×** hides the bar for the session. `/ado-pr show` brings it back.
 
 ### The CI popover

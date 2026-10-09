@@ -6,7 +6,8 @@ import type { CheckState, MinePr, PrSnapshot, RepoBranch } from '../types'
 import { adoOf } from './ado'
 import type { Ado, CreatePrInput } from './ado'
 import { archivePrompt, buildFailurePrompt, commentsPrompt, createPrPrompt, failureText, statusText } from './prompts'
-import { ICON_ALT, iconSvg, PHASE_LABEL } from './icons'
+import { CHIP_COLORS, chipSvg, commentSvg, ICON_ALT, iconSvg, PHASE_LABEL } from './icons'
+import type { ChipPart } from './icons'
 import { agoOf, isPrStatus, phaseOf, rollupOf, tallyOf, thousands } from './status'
 
 type $ = EngineInterface
@@ -50,14 +51,10 @@ const STATE_COLOR: Record<CheckState, string> = {
   skipped: 'inactive',
 }
 
-const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', closed: 'error' } as const
+const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', closed: 'warning' } as const
 
-/** Hover groups: #id with its card, the CI button with its popover. */
+/** The hover group of #id and its card. */
 const CARD_SCOPE = 'ado-pr-card'
-const CI_SCOPE = 'ado-pr-ci'
-
-/** The +/− and file-count chips' background. */
-const CHIP_BG = '#383838'
 
 const messageOf = (error: unknown) => String((error as Error)?.message ?? error)
 
@@ -702,14 +699,47 @@ export const register: Register = (on, options) => {
       )
     }
 
-    // The +/− lines on a one-line chip, as GitHub's.
-    const lines = (key: string) =>
-      pr.additions === null || pr.deletions === null ? null : (
-        <Box key={key} flexDirection="row" gap={1} paddingX={1} backgroundColor={CHIP_BG}>
-          <Text color="diffAdded">{`+${thousands(pr.additions)}`}</Text>
-          <Text color="diffRemoved">{`−${thousands(pr.deletions)}`}</Text>
+    // A rounded pill of bold monospace runs on the desktop; bold coloured text on the terminal.
+    const chip = (key: string, parts: ChipPart[], themed: ('diffAdded' | 'diffRemoved' | 'inactive')[]) => {
+      if (e.surface === 'desktop') {
+        const { Svg } = $.ui.resolve(e)
+        const pill = chipSvg(parts)
+
+        return <Svg key={key} source={pill.source} alt={parts.map(part => part.text).join(' ')} width={pill.width} height={pill.height} />
+      }
+
+      return (
+        <Box key={key} flexDirection="row" gap={1}>
+          {parts.map((part, i) => (
+            <Text bold color={themed[i]}>
+              {part.text}
+            </Text>
+          ))}
         </Box>
       )
+    }
+
+    const lines = (key: string) =>
+      pr.additions === null || pr.deletions === null
+        ? null
+        : chip(
+            key,
+            [
+              { text: `+${thousands(pr.additions)}`, color: CHIP_COLORS.added },
+              { text: `−${thousands(pr.deletions)}`, color: CHIP_COLORS.removed },
+            ],
+            ['diffAdded', 'diffRemoved'],
+          )
+
+    const commentIcon = () => {
+      if (e.surface === 'desktop') {
+        const { Svg } = $.ui.resolve(e)
+
+        return <Svg source={commentSvg(16)} alt="Unresolved comments" width={16} height={16} />
+      }
+
+      return <Text color="warning">✎</Text>
+    }
 
     // The card over the bar while #id is hovered, as GitHub's.
     const card = (
@@ -719,7 +749,7 @@ export const register: Register = (on, options) => {
         width={Math.min(64, Math.max(40, e.props.bodyColumns - 4))}
         marginBottom={1}
         display="none"
-        hover={{ scope: CARD_SCOPE, display: 'flex' }}
+        hover={isMenuOpen ? undefined : { scope: CARD_SCOPE, display: 'flex' }}
         flexDirection="column"
         gap={1}
         paddingX={2}
@@ -745,11 +775,8 @@ export const register: Register = (on, options) => {
           </Text>
           <Box flexGrow={1} />
           {lines('ado-card-lines')}
-          {pr.files !== null && (
-            <Box paddingX={1} backgroundColor={CHIP_BG}>
-              <Text dimColor>{`${pr.files} file${pr.files === 1 ? '' : 's'}`}</Text>
-            </Box>
-          )}
+          {pr.files !== null &&
+            chip('ado-card-files', [{ text: `${pr.files} file${pr.files === 1 ? '' : 's'}`, color: CHIP_COLORS.muted }], ['inactive'])}
         </Box>
       </Box>
     )
@@ -772,7 +799,6 @@ export const register: Register = (on, options) => {
         width={Math.min(52, Math.max(36, e.props.bodyColumns - 2))}
         marginBottom={1}
         display={isMenuOpen ? 'flex' : 'none'}
-        hover={isMenuOpen ? { scope: CI_SCOPE } : { scope: CI_SCOPE, display: 'flex' }}
         flexDirection="column"
         paddingX={2}
         paddingY={1}
@@ -866,21 +892,25 @@ export const register: Register = (on, options) => {
         <Box key="ado-bar" flexDirection="row" gap={2} alignItems="center">
           <Box key="ado-id" flexDirection="row" gap={1} alignItems="center">
             {icon(16)}
-            <Text hover={{ scope: CARD_SCOPE, underline: true }} color={PHASE_COLOR[phase]}>
+            <Text hover={isMenuOpen ? undefined : { scope: CARD_SCOPE, underline: true }} color={PHASE_COLOR[phase]}>
               <Link href={pr.url}>{`#${pr.id}`}</Link>
             </Text>
           </Box>
           <Text dimColor>{pr.repo}</Text>
           <Box flexShrink={1}>{branchCode}</Box>
           <Box flexGrow={1} />
-          {pr.comments.length > 0 && <Text color="warning">{`💬 ${pr.comments.length}`}</Text>}
-          {lines('ado-lines')}
-          <Box key="ado-ci" flexDirection="row" alignItems="center">
+          {pr.comments.length > 0 && (
+            <Box key="ado-comment-count" flexDirection="row" gap={1} alignItems="center">
+              {commentIcon()}
+              <Text bold>{String(pr.comments.length)}</Text>
+            </Box>
+          )}
+          <Box key="ado-ci" flexDirection="row" gap={1} alignItems="center">
+            {lines('ado-lines')}
             {rollup !== 'none' && <Text color={ciColor}>●</Text>}
             <Button
               key="ado-ci-button"
               label={isMenuOpen ? 'CI ▴' : 'CI ▾'}
-              hover={{ scope: CI_SCOPE, color: ciColor }}
               onPress={() => update($, menuAtom, isOpen => !isOpen)}
             />
           </Box>
