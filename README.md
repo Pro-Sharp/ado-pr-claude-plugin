@@ -23,6 +23,21 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
 >
 > All commands are listed under [Commands](#commands).
 
+## Quick start
+
+```bash
+claude plugin marketplace add Pro-Sharp/ado-pr-claude-plugin
+```
+
+```bash
+claude plugin install ado-pr@azure-devops-pr
+```
+This installs and enables the CLI version. You need to manually enable it on Claude Desktop in the Customize menu to enable it on UI too.
+
+<img src="docs/install2.png" alt="One PR bar above the prompt" width="760">
+
+You also need the Azure CLI with the `azure-devops` extension, signed in with `az login`, and a clone whose `origin` is Azure Repos (see [Requirements](#requirements)). Other ways to install are under [Install](#install).
+
 ## See it in action
 
 **A bar for the chat's pull request**, right above the prompt: state icon, `#id`, repository, source branch, `+/−` lines and the CI panel.
