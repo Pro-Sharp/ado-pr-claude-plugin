@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-09
+
 ### Changed
 
 - The plugin is listed as **Azure DevOps Pull Requests Bar** (its id stays `ado-pr`, so installs, commands and saved PRs carry over).
@@ -90,7 +92,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.3...v0.2.4
