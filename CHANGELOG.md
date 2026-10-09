@@ -21,7 +21,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - The bar no longer disappears after you leave a chat and come back. The last snapshot per folder is kept in `$.store` and drawn at once, and a draw with stale data starts a refresh.
 - The bar no longer stays empty after a failed first read. Polling now retries even when no branch was ever read, and each prompt and finished turn refreshes as well (throttled).
 
-## [0.1.0] - 2026-10-09
+## 0.1.0 - 2026-10-09
 
 ### Added
 
@@ -34,6 +34,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/<github-user>/claude-code-azure-devops-pr/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/<github-user>/claude-code-azure-devops-pr/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/<github-user>/claude-code-azure-devops-pr/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/releases/tag/v0.2.0

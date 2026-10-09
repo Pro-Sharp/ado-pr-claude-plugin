@@ -17,7 +17,7 @@ Thanks for helping. This project is small on purpose: one Claude Code mod, built
    ```
 2. Clone this repository and run the mod from your clone in any Azure Repos checkout:
    ```bash
-   claude --plugin-dir /path/to/claude-code-azure-devops-pr/plugins/ado-pr
+   claude --plugin-dir /path/to/ado-pr-claude-plugin/plugins/ado-pr
    ```
    Saving a file reloads the mod in that session. For the desktop app, set `CLAUDE_CODE_PLUGIN_DIRS` in `~/.claude/settings.json` (see the README).
 3. Once the mod has loaded, Claude Code has written `plugins/ado-pr/.claude-plugin/types/`. Type-check against it:

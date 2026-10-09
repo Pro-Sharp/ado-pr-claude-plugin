@@ -67,7 +67,7 @@ The organization, project and repository come from `origin`, so you don't need `
 At the prompt of a Claude Code **terminal** session:
 
 ```text
-/plugin install ado-pr --marketplace <github-user>/claude-code-azure-devops-pr
+/plugin install ado-pr --marketplace Pro-Sharp/ado-pr-claude-plugin
 ```
 
 Answer `y` to add the marketplace and pick the **user** scope. The mod is active immediately and loads in every later session, including the desktop app's Code tab.
@@ -78,7 +78,7 @@ Answer `y` to add the marketplace and pick the **user** scope. The mod is active
 Add the marketplace first, then install from it:
 
 ```text
-/plugin marketplace add <github-user>/claude-code-azure-devops-pr
+/plugin marketplace add Pro-Sharp/ado-pr-claude-plugin
 /plugin install ado-pr@azure-devops-pr
 /reload-plugins
 ```
@@ -94,7 +94,7 @@ Load a local clone in every session, desktop included. Add this to `~/.claude/se
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "C:/path/to/claude-code-azure-devops-pr/plugins/ado-pr"
+    "CLAUDE_CODE_PLUGIN_DIRS": "C:/path/to/ado-pr-claude-plugin/plugins/ado-pr"
   }
 }
 ```
