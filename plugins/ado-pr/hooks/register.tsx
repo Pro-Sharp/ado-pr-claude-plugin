@@ -796,7 +796,7 @@ export const register: Register = (on, options) => {
     const box = (isOn: boolean) => (isOn ? '☑' : '☐')
 
     /** One PR: its hover card and CI panel (inside the band, above its row) and its bar row. */
-    const prBlock = (pr: PrSnapshot, isLast: boolean) => {
+    const prBlock = (pr: PrSnapshot, isLast: boolean, panelBudget: number) => {
       const phase = phaseOf(pr)
       const rollup = rollupOf(pr.checks)
       const isMenuOpen = openMenu === pr.id
@@ -861,40 +861,49 @@ export const register: Register = (on, options) => {
         </Box>
       )
 
+      // The band holds at most `maxRows` rows and scrolls past that, from the top, which would push
+      // this bar out of sight. So the panel is laid out in whole rows, counted, and its optional lines
+      // (the checks, the policy summary, the ready line) give way to fit `panelBudget`.
+      const frameRows = 2 + (isDesktop ? 1 : 0)
+      const sectionGap = isDesktop ? 0.5 : 1
+      const fixedRows = frameRows + 1 + 1 + (isActive ? 1 : 0) + 2 * sectionGap + 1 + sectionGap
+      let rest = Math.floor(panelBudget - fixedRows + 1e-9)
+      const ciRows = ci.length === 0 ? 1 : ci.length
+      const shownChecks = ci.length <= rest ? ci.length : Math.max(0, rest - 1)
+      rest -= Math.min(ciRows, Math.max(0, rest))
+      const hiddenChecks = ci.length - shownChecks
+      const showPolicies = rest >= 1
+      rest -= showPolicies ? 1 : 0
+      const showReady = isActive && rest >= 1
+
       const panel = isMenuOpen ? (
         <Box
           key={`ado-ci-panel-${pr.id}`}
           alignSelf="flex-end"
           width={Math.min(60, Math.max(40, e.props.bodyColumns - 2))}
-          marginBottom={1}
+          marginBottom={sectionGap}
           flexDirection="column"
           paddingX={2}
-          paddingTop={1}
-          paddingBottom={1.5}
+          paddingY={isDesktop ? 0.5 : 0}
           borderStyle="round"
           borderColor="inactive"
         >
           <Box flexDirection="row" gap={1}>
-            <Text dimColor wrap="truncate">{`CI monitoring · #${pr.id}`}</Text>
+            <Text dimColor wrap="truncate">{`CI · #${pr.id}`}</Text>
+            {tallyOf(ci).map(([state, count]) => (
+              <Text key={`tally-${pr.id}-${state}`} color={STATE_COLOR[state]}>{`${STATE_ICON[state]} ${count}`}</Text>
+            ))}
             <Box flexGrow={1} />
             {busy && <Text color="warning">{`${busy}…`}</Text>}
             <Link href={pr.url}>↗</Link>
           </Box>
-          {ci.length === 0 && (
+          {ci.length === 0 && ciRows <= Math.max(0, panelBudget - fixedRows) && (
             <Text dimColor wrap="truncate">
               No build validation on this PR.
             </Text>
           )}
-          {tallyOf(ci).map(([state, count]) => (
-            <Box key={`tally-${pr.id}-${state}`} flexDirection="row" gap={1}>
-              <Text color={STATE_COLOR[state]}>{STATE_ICON[state]}</Text>
-              <Text>{STATE_LABEL[state]}</Text>
-              <Box flexGrow={1} />
-              <Text dimColor>{String(count)}</Text>
-            </Box>
-          ))}
-          {ci.map(check => (
-            <Box key={`check-${pr.id}-${check.id}`} flexDirection="row" gap={1} paddingLeft={2}>
+          {ci.slice(0, shownChecks).map(check => (
+            <Box key={`check-${pr.id}-${check.id}`} flexDirection="row" gap={1} paddingLeft={1}>
               <Text color={STATE_COLOR[check.state]}>{STATE_ICON[check.state]}</Text>
               {check.buildId !== null ? (
                 <Text wrap="truncate">
@@ -906,11 +915,15 @@ export const register: Register = (on, options) => {
               {!check.isBlocking && <Text dimColor>(optional)</Text>}
             </Box>
           ))}
-          {/* One fact a line, never wrapped: the band sizes itself by line count, so a wrapped line would need scrolling. */}
-          <Text dimColor wrap="truncate">{`Policies ${policies.filter(p => p.state === 'passed').length}/${policies.length} met`}</Text>
-          <Text dimColor wrap="truncate">{`Reviewers ${votes}`}</Text>
-          <Text dimColor wrap="truncate">{`${pr.comments.length} open comment${pr.comments.length === 1 ? '' : 's'}`}</Text>
-          <Box flexDirection="column" marginTop={1}>
+          {hiddenChecks > 0 && shownChecks < ci.length && Math.max(0, panelBudget - fixedRows) >= 1 && (
+            <Text dimColor wrap="truncate">{`  +${hiddenChecks} more`}</Text>
+          )}
+          {showPolicies && (
+            <Text dimColor wrap="truncate">
+              {`Policies ${policies.filter(p => p.state === 'passed').length}/${policies.length} · ${votes} · ${pr.comments.length} comment${pr.comments.length === 1 ? '' : 's'}`}
+            </Text>
+          )}
+          <Box flexDirection="column" marginTop={sectionGap}>
             <Button key={`ado-autofix-${pr.id}`} plain label={`${box(autoFix)} Auto-fix CI & address comments`} onPress={() => toggleAutoFix($)} />
             {isActive && (
               <Button
@@ -920,13 +933,13 @@ export const register: Register = (on, options) => {
                 onPress={() => toggleAutoMerge($, pr.id)}
               />
             )}
-            {isActive && (
+            {showReady && (
               <Text dimColor wrap="truncate">
                 {isReady ? '   Ready to merge now.' : `   Completes (${config.mergeStrategy}) once required policies pass.`}
               </Text>
             )}
           </Box>
-          <Box flexDirection="row" gap={1} marginTop={1}>
+          <Box flexDirection="row" gap={1} marginTop={sectionGap}>
             <Button key={`ado-refresh-${pr.id}`} label="Refresh" onPress={() => refresh($)} />
             {isActive && rollup === 'failed' && (
               <Button
@@ -1030,12 +1043,18 @@ export const register: Register = (on, options) => {
     // Rows breathe on the desktop by a few pixels; the terminal has no unit smaller than a row.
     const gap = (key: string) => (e.surface === 'desktop' ? <Box key={key} height={ROW_GAP} /> : null)
 
+    // The rows left for an open CI panel once every bar, gap and the action row have theirs.
+    const gapRows = isDesktop ? ROW_GAP : 0
+    const otherRows =
+      prs.length + Math.max(0, prs.length - 1) * gapRows + (actions ? 1 + (prs.length > 0 ? gapRows : 0) : 0) + (errorRow ? 1 : 0)
+    const panelBudget = e.props.maxRows - otherRows
+
     // A band clips whatever it draws to itself, so each card and CI panel opens
     // inside it, above its own row: the band grows upward from the prompt.
     return (
       <Box key="ado-band" flexDirection="column">
         {errorRow}
-        {prs.flatMap((pr, i) => [i > 0 ? gap(`ado-gap-${pr.id}`) : null, ...prBlock(pr, i === prs.length - 1 && !actions)])}
+        {prs.flatMap((pr, i) => [i > 0 ? gap(`ado-gap-${pr.id}`) : null, ...prBlock(pr, i === prs.length - 1 && !actions, panelBudget)])}
         {actions && prs.length > 0 ? gap('ado-gap-actions') : null}
         {actions}
       </Box>

@@ -121,8 +121,9 @@ describe('register', () => {
         expect((await ui.find({ key: 'ado-ci-button-42' }))?.props.label).toBe('🟢 CI ▾')
       }
       await ui.press({ key: 'ado-ci-button-42' })
-      expect(await ui.find({ text: /Passed/ })).toBeDefined()
+      expect(await ui.find({ text: '✓ 1' })).toBeDefined()
       expect(await ui.find({ text: /web-ci/ })).toBeDefined()
+      expect(await ui.find({ text: /Policies 0\/0/ })).toBeDefined()
       expect(await ui.find({ text: /Ready to merge now/ })).toBeDefined()
 
       if (surface === 'desktop') {
@@ -134,6 +135,19 @@ describe('register', () => {
       }
 
       await ui.unmount()
+
+      // A short band: the panel drops its optional lines so the bar row never scrolls away.
+      const short = await $.ui.mount({ plugin: 'ado-pr', surface, ...BAND, props: { ...BAND.props, maxRows: 12, scroll: { offset: 0, bodyRows: 11 } } })
+      if ((await short.find({ key: 'ado-ci-panel-42' })) === undefined) {
+        await short.press({ key: 'ado-ci-button-42' })
+      }
+      expect(await short.find({ text: /web-ci/ })).toBeDefined()
+      expect(await short.find({ key: 'ado-automerge-42' })).toBeDefined()
+      expect(await short.find({ text: /Policies/ })).toBeUndefined()
+      expect(await short.find({ text: /Ready to merge now/ })).toBeUndefined()
+      expect(await short.find({ key: 'ado-bar-42' })).toBeDefined()
+      await short.press({ key: 'ado-ci-button-42' })
+      await short.unmount()
     }
   })
 

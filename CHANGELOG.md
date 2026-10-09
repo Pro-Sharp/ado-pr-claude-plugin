@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-10-09
+
+### Changed
+
+- The README points to `/ado-pr find` and `/ado-pr link` near the top, and shows the CI panel in the terminal.
+
+### Fixed
+
+- Opening the CI panel no longer scrolls the PR bar out of view. The panel is sized to the rows the band has left: the CI counts sit in its header, the policy summary is one line, and when space is short the check list ends in "+n more" and the policy and ready lines are left out.
+
 ## [0.4.3] - 2026-10-09
 
 ### Fixed
@@ -105,7 +115,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.0...v0.4.1

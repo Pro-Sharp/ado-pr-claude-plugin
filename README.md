@@ -16,17 +16,30 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
 
 **Azure DevOps Pull Requests Bar** (plugin id `ado-pr`) is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine.
 
+> **Bar missing in a chat?** Each chat shows the PRs it created. For a chat that made its PR before you installed the plugin, or one Claude opened some other way:
+>
+> - `/ado-pr find` (or the **Find PR** button) looks through the chat's history and adds every PR of this repository it mentions.
+> - `/ado-pr link <id>` adds any PR by its number, for example `/ado-pr link 1234`.
+>
+> All commands are listed under [Commands](#commands).
+
 ## See it in action
 
 **A bar for the chat's pull request**, right above the prompt: state icon, `#id`, repository, source branch, `+/−` lines and the CI panel.
 
 <img src="docs/newpr.png" alt="One PR bar above the prompt" width="760">
 
+The whole feature set works in **CLI as well.**
+
+<img src="docs/options-cli.png" alt="CI panel open above the PR bar in Claude Code CLI" width="760">
+
+
 **Hover `#id`** for the summary card, as in the screenshot at the top: state, title, author, `+/−` and the number of files.
 
 **Click CI ▾** for the CI panel: build validations, policies and reviewers, and the **Auto-fix CI & address comments** and **Auto-merge when ready** switches.
 
 <img src="docs/options.png" alt="CI panel open above the PR bar" width="760">
+<img src="docs/options-cli.png" alt="CI panel open above the PR bar in Claude Code CLI" width="760">
 
 **When the PR merges** you get a notice, the icon turns purple, and **Create PR** comes back for the next one.
 
