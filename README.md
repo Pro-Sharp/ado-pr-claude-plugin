@@ -15,12 +15,12 @@ When you work on a GitHub repository, Claude Code Desktop shows a bar above the 
 **ado-pr** is a [Claude Code mod](https://claude.dev/blog/getting-started-with-claude-code-mods/) that draws the same bar for **Azure DevOps**, using only `az` and `git` on your machine:
 
 ```text
-                                              ╭─ CI monitoring ─────────────── ↗ ─╮
+                                               ╭─ CI monitoring ─────────────── ↗ ─╮
  ╭─ ⑂ Open  CS/contoso-store #10482  2 days ─╮ │ ✓ Passed                       1  │
  │ feat(checkout): CS-4821 - Redesign th…    │ │   ✓ contoso-store                 │
  │ Jane Doe             ╭ +56 −9 ╮ ╭ 2 files ╮ │ ☑ Auto-fix CI & address comments  │
  ╰───────────────────────────────────────────╯ │ ☐ Auto-merge when ready           │
-   ↑ hover #id                                  ╰───────────────── ↑ hover or click ╯
+   ↑ hover #id                                 ╰───────────────── ↑ hover or click ╯
  ⑂ #10482   contoso-store   `feature/checkout-redesign-summary-ui`   ╭ +56 −9 ╮  ● CI ▾  ×
 ```
 
@@ -122,7 +122,7 @@ Running from a local clone (`--plugin-dir`, `CLAUDE_CODE_PLUGIN_DIRS`, or a mark
 Open a session in an Azure Repos clone.
 
 - **On a feature branch without a PR**, the bar offers **Create PR**. Claude commits and pushes the branch, writes a title and description from the diff, and opens the PR through its `create_pull_request` tool. Asking Claude for a PR in plain words does the same thing.
-- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Hover **CI ▾** to see the CI popover, and click it to keep the popover open.
+- **With a PR**, the bar shows it. Hover `#id` for a summary card (state, title, author, `+/−`, files), and click it to open the PR in Azure DevOps. Hover **CI ▾** to see the CI panel, and click it to keep the panel open. Both open inside the bar, which grows upward from the prompt: a mod can't draw over the chat.
 - **×** hides the bar for the session. `/ado-pr show` brings it back.
 
 ### The CI popover

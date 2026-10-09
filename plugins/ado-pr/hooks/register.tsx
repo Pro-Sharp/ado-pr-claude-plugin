@@ -56,8 +56,8 @@ const PHASE_COLOR = { open: 'success', draft: 'inactive', merged: 'merged', clos
 const CARD_SCOPE = 'ado-pr-card'
 const CI_SCOPE = 'ado-pr-ci'
 
-/** The page's own colour in either theme (black on dark, white on light), so a popover hides what it covers. */
-const POPOVER_BG = 'inverseText'
+/** The +/− and file-count chips' background. */
+const CHIP_BG = '#383838'
 
 const messageOf = (error: unknown) => String((error as Error)?.message ?? error)
 
@@ -702,17 +702,10 @@ export const register: Register = (on, options) => {
       )
     }
 
-    // The +/− lines, framed on the desktop (a border costs the terminal two rows).
+    // The +/− lines on a one-line chip, as GitHub's.
     const lines = (key: string) =>
       pr.additions === null || pr.deletions === null ? null : (
-        <Box
-          key={key}
-          flexDirection="row"
-          gap={1}
-          paddingX={isDesktop ? 1 : 0}
-          borderStyle={isDesktop ? 'round' : undefined}
-          borderColor="inactive"
-        >
+        <Box key={key} flexDirection="row" gap={1} paddingX={1} backgroundColor={CHIP_BG}>
           <Text color="diffAdded">{`+${thousands(pr.additions)}`}</Text>
           <Text color="diffRemoved">{`−${thousands(pr.deletions)}`}</Text>
         </Box>
@@ -722,10 +715,9 @@ export const register: Register = (on, options) => {
     const card = (
       <Box
         key="ado-card"
-        position="absolute"
-        bottom={1}
-        left={0}
+        alignSelf="flex-start"
         width={Math.min(64, Math.max(40, e.props.bodyColumns - 4))}
+        marginBottom={1}
         display="none"
         hover={{ scope: CARD_SCOPE, display: 'flex' }}
         flexDirection="column"
@@ -734,7 +726,6 @@ export const register: Register = (on, options) => {
         paddingY={1}
         borderStyle="round"
         borderColor="inactive"
-        backgroundColor={POPOVER_BG}
       >
         <Box flexDirection="row" gap={2} alignItems="center">
           <Box flexDirection="row" gap={1} paddingX={1} borderStyle="round" borderColor={PHASE_COLOR[phase]}>
@@ -755,7 +746,7 @@ export const register: Register = (on, options) => {
           <Box flexGrow={1} />
           {lines('ado-card-lines')}
           {pr.files !== null && (
-            <Box paddingX={isDesktop ? 1 : 0} borderStyle={isDesktop ? 'round' : undefined} borderColor="inactive">
+            <Box paddingX={1} backgroundColor={CHIP_BG}>
               <Text dimColor>{`${pr.files} file${pr.files === 1 ? '' : 's'}`}</Text>
             </Box>
           )}
@@ -777,10 +768,9 @@ export const register: Register = (on, options) => {
     const popover = (
       <Box
         key="ado-ci-popover"
-        position="absolute"
-        bottom={1}
-        right={0}
+        alignSelf="flex-end"
         width={Math.min(52, Math.max(36, e.props.bodyColumns - 2))}
+        marginBottom={1}
         display={isMenuOpen ? 'flex' : 'none'}
         hover={isMenuOpen ? { scope: CI_SCOPE } : { scope: CI_SCOPE, display: 'flex' }}
         flexDirection="column"
@@ -788,7 +778,6 @@ export const register: Register = (on, options) => {
         paddingY={1}
         borderStyle="round"
         borderColor="inactive"
-        backgroundColor={POPOVER_BG}
       >
         <Box flexDirection="row" gap={1}>
           <Text dimColor>CI monitoring</Text>
@@ -868,31 +857,35 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
+    // A band clips whatever it draws to itself, so the card and the CI panel
+    // open inside it, above the bar row: the band grows upward from the prompt.
     return (
-      <Box key="ado-bar" flexDirection="row" gap={2} alignItems="center">
-        <Box key="ado-id" flexDirection="row" gap={1} alignItems="center">
-          {card}
-          {icon(16)}
-          <Text hover={{ scope: CARD_SCOPE, underline: true }} color={PHASE_COLOR[phase]}>
-            <Link href={pr.url}>{`#${pr.id}`}</Link>
-          </Text>
+      <Box key="ado-band" flexDirection="column">
+        {card}
+        {popover}
+        <Box key="ado-bar" flexDirection="row" gap={2} alignItems="center">
+          <Box key="ado-id" flexDirection="row" gap={1} alignItems="center">
+            {icon(16)}
+            <Text hover={{ scope: CARD_SCOPE, underline: true }} color={PHASE_COLOR[phase]}>
+              <Link href={pr.url}>{`#${pr.id}`}</Link>
+            </Text>
+          </Box>
+          <Text dimColor>{pr.repo}</Text>
+          <Box flexShrink={1}>{branchCode}</Box>
+          <Box flexGrow={1} />
+          {pr.comments.length > 0 && <Text color="warning">{`💬 ${pr.comments.length}`}</Text>}
+          {lines('ado-lines')}
+          <Box key="ado-ci" flexDirection="row" alignItems="center">
+            {rollup !== 'none' && <Text color={ciColor}>●</Text>}
+            <Button
+              key="ado-ci-button"
+              label={isMenuOpen ? 'CI ▴' : 'CI ▾'}
+              hover={{ scope: CI_SCOPE, color: ciColor }}
+              onPress={() => update($, menuAtom, isOpen => !isOpen)}
+            />
+          </Box>
+          {close}
         </Box>
-        <Text dimColor>{pr.repo}</Text>
-        <Box flexShrink={1}>{branchCode}</Box>
-        <Box flexGrow={1} />
-        {pr.comments.length > 0 && <Text color="warning">{`💬 ${pr.comments.length}`}</Text>}
-        {lines('ado-lines')}
-        <Box key="ado-ci" flexDirection="row" alignItems="center">
-          {popover}
-          {rollup !== 'none' && <Text color={ciColor}>●</Text>}
-          <Button
-            key="ado-ci-button"
-            label={isMenuOpen ? 'CI ▴' : 'CI ▾'}
-            hover={{ scope: CI_SCOPE, color: ciColor }}
-            onPress={() => update($, menuAtom, isOpen => !isOpen)}
-          />
-        </Box>
-        {close}
       </Box>
     )
   })
