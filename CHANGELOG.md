@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-10-09
+
+### Fixed
+
+- The `+/−` chip is the same height as the CI button: 20px, as measured on the desktop (it was 26px in 0.2.3), with 14px bold text and tighter padding.
+
 ## [0.2.3] - 2026-10-09
 
 ### Fixed
@@ -57,7 +63,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.2.0...v0.2.1
