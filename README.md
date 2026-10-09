@@ -101,6 +101,22 @@ Load a local clone in every session, desktop included. Add this to `~/.claude/se
 
 </details>
 
+## Updating
+
+An installed copy doesn't follow the repository by itself. To get the latest release:
+
+```bash
+claude plugin marketplace update azure-devops-pr
+```
+
+```bash
+claude plugin update ado-pr
+```
+
+Then run `/reload-plugins` in an open session, or start a new one. [CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
+
+Running from a local clone (`--plugin-dir`, `CLAUDE_CODE_PLUGIN_DIRS`, or a marketplace added from a folder)? Pull the changes and run `/reload-plugins`; there's nothing to update.
+
 ## Usage
 
 Open a session in an Azure Repos clone.

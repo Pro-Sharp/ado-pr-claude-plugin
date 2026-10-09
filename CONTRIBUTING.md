@@ -59,6 +59,19 @@ CI runs both. Please also:
 
 ## Releasing
 
-1. Bump `version` in `plugins/ado-pr/.claude-plugin/plugin.json`.
-2. Move **Unreleased** in `CHANGELOG.md` under the new version.
-3. Tag `vX.Y.Z` and push. Users get the update with `claude plugin update ado-pr`.
+Installed copies update only when the version changes, so every release bumps it.
+
+- [ ] `main` is green in CI, and you've tried the release once against a real Azure DevOps PR (bar, hover card, CI popover).
+- [ ] `claude plugin validate .` and `claude plugin validate plugins/ado-pr` pass.
+- [ ] `claude plugin test plugins/ado-pr` passes.
+- [ ] Bump `version` in `plugins/ado-pr/.claude-plugin/plugin.json` ([Semantic Versioning](https://semver.org/): patch for fixes, minor for features, major when an option, command or tool changes or goes away).
+- [ ] In `CHANGELOG.md`, rename **Unreleased** to `[X.Y.Z] - YYYY-MM-DD`, add a fresh empty **Unreleased** above it, and update the compare links at the bottom.
+- [ ] Commit (`chore(release): vX.Y.Z`), then tag and push:
+  ```bash
+  git tag vX.Y.Z
+  ```
+  ```bash
+  git push origin main --tags
+  ```
+- [ ] Create a GitHub release from the tag, with that version's changelog section as its notes.
+- [ ] Check the update path from a clean install: `claude plugin marketplace update azure-devops-pr`, then `claude plugin update ado-pr`, then `/reload-plugins`, and confirm the new version shows in `claude plugin list`.
