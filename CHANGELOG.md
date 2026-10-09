@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-09
+
+### Fixed
+
+- A PR created with `az repos pr create` is bound by its own `pullRequestId`, not a PR number its description mentions.
+- A build whose logs could not be read is retried on the next read instead of being marked handled; one PR's failure no longer stops the others.
+- A review thread that was resolved and then reopened is handed to Claude again by auto-fix.
+- Scratch files for `az` are unique per call, so chats sharing a clone cannot overwrite each other's.
+- The read queue, throttle and poll timer are kept per chat.
+- Sign-in problems are no longer reported as "no such PR" or as an empty policy/comment list; `/ado-pr mine` works for service principals.
+- Merged and abandoned PRs are no longer re-read on every poll.
+- "Ready to merge" accounts for rejections and required reviewers still waiting; `build_failure_logs` picks the project of the PR that owns the build.
+
 ## [0.4.5] - 2026-10-09
 
 ### Changed
@@ -121,7 +134,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.5...v0.5.0
 [0.4.5]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.2...v0.4.3

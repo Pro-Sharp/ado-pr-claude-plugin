@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { azErrorOf } from '../hooks/ado'
+import { adoOf, azErrorOf } from '../hooks/ado'
 import { createdPrIdOf, prIdsFromHistory } from '../hooks/history'
 import { parseAdoRemote } from '../hooks/remote'
 import { checksOf, commentsOf, parseShortstat, phaseOf, rollupOf, thousands } from '../hooks/status'
@@ -94,5 +94,47 @@ describe('history', () => {
     expect(createdPrIdOf('{\n  "pullRequestId": 11,\n  "status": "active"\n}')).toBe(11)
     expect(createdPrIdOf('{ "id": 12, "status": "active" }')).toBe(12)
     expect(createdPrIdOf('nothing here')).toBe(null)
+  })
+
+  test("the PR's own id wins over ones its description mentions", async () => {
+    expect(createdPrIdOf('{ "description": "follows PR #45, see /pullrequest/46", "pullRequestId": 50 }')).toBe(50)
+  })
+})
+
+describe('ado', () => {
+  const ran: string[][] = []
+  const host = (fail?: string) => ({
+    exec: async (argv: readonly string[]) => {
+      ran.push([...argv])
+      if (argv[0] === 'git') return { exitCode: 0, stdout: argv.includes('--absolute-git-dir') ? '/repo/.git' : '', stderr: '' }
+      if (fail) return { exitCode: 1, stdout: '', stderr: fail }
+      return { exitCode: 0, stdout: argv.includes('account') ? '{"user":{"name":"app-id","type":"servicePrincipal"}}' : '[]', stderr: '' }
+    },
+    azPrefix: ['az'] as const,
+    cwd: '/repo',
+    writeFile: async (path: string) => void written.push(path),
+    now: async () => 0,
+  })
+  const written: string[] = []
+
+  test('scratch files are unique per call', async () => {
+    const ado = adoOf(host())
+    const branch = { orgUrl: 'https://dev.azure.com/o', project: 'p', repo: 'r', branch: 'f', hasUpstream: true, isDefault: false }
+    await ado.az(['x']).catch(() => undefined)
+    await ado.create(branch, { title: 'a' }).catch(() => undefined)
+    await ado.create(branch, { title: 'a' }).catch(() => undefined)
+    expect(new Set(written).size).toBe(written.length)
+    expect(written.length).toBe(2)
+  })
+
+  test('mine skips --creator for a service principal', async () => {
+    ran.length = 0
+    await adoOf(host()).mine('https://dev.azure.com/o', 'p')
+    expect(ran.some(argv => argv.includes('--creator'))).toBe(false)
+  })
+
+  test('describe answers null only for a missing PR, not for a sign-in problem', async () => {
+    expect(await adoOf(host('ERROR: TF401180: The requested pull request was not found.')).describe('https://dev.azure.com/o', 1)).toBe(null)
+    await expect(adoOf(host("ERROR: Please run 'az login' to setup account.")).describe('https://dev.azure.com/o', 1)).rejects.toThrow('az login')
   })
 })

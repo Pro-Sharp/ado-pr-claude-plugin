@@ -63,7 +63,9 @@ export function prIdsFromHistory(messages: readonly HistoryMessage[], limit = 20
 
 /** The PR id in the output of a command Claude ran (`az repos pr create`, `--query` or not). */
 export function createdPrIdOf(output: string): number | null {
-  const [id] = idsIn(output, [...MENTIONS, CREATED_ID])
+  // The JSON's own id first: a description printed before it may mention other PRs.
+  const [own] = idsIn(output, [/"pullRequestId"\s*:\s*(\d+)/g])
+  const [id] = own !== undefined ? [own] : idsIn(output, [...MENTIONS, CREATED_ID])
 
   return id ?? null
 }

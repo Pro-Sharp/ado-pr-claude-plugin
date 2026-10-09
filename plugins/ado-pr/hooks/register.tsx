@@ -67,10 +67,23 @@ const messageOf = (error: unknown) => String((error as Error)?.message ?? error)
 const config = { pollSeconds: 60, mergeStrategy: 'squash', deleteSourceBranch: false, azPython: '' }
 
 let azPrefix: readonly string[] | null = null
-let tail: Promise<void> = Promise.resolve()
-let waiting = 0
-let poll: Timer | null = null
-let lastKickAt = 0
+
+/** The read queue, throttle and poll timer of one chat; the module may serve several. */
+type SessionState = { tail: Promise<void>; waiting: number; lastKickAt: number; poll: Timer | null }
+
+const states = new Map<string, SessionState>()
+
+async function stateOf($: $): Promise<SessionState> {
+  const id = await $.session.id()
+  let state = states.get(id)
+
+  if (!state) {
+    state = { tail: Promise.resolve(), waiting: 0, lastKickAt: 0, poll: null }
+    states.set(id, state)
+  }
+
+  return state
+}
 
 /**
  * A chat's PRs are kept in `$.store` under its session id (the transcript's
@@ -141,13 +154,14 @@ async function recallSnapshots($: $): Promise<PrSnapshot[]> {
  * it (a draw, a finished turn); at most one per `minMs`.
  */
 async function kick($: $, minMs = 15_000) {
+  const state = await stateOf($)
   const now = await $.clock.now()
 
-  if (now - lastKickAt < minMs) {
+  if (now - state.lastKickAt < minMs) {
     return
   }
 
-  lastKickAt = now
+  state.lastKickAt = now
 
   try {
     $.clock.after(0, () => {
@@ -200,18 +214,20 @@ async function adoFor($: $): Promise<Ado> {
  * each with its caller's own `$`; a caller arriving while two are lined up
  * joins the last.
  */
-function refresh($: $): Promise<void> {
-  if (waiting > 0) {
-    return tail
+async function refresh($: $): Promise<void> {
+  const state = await stateOf($)
+
+  if (state.waiting > 0) {
+    return state.tail
   }
 
-  waiting += 1
-  const run = tail.then(() => {
-    waiting -= 1
+  state.waiting += 1
+  const run = state.tail.then(() => {
+    state.waiting -= 1
 
     return refreshOnce($)
   })
-  tail = run.catch(() => undefined)
+  state.tail = run.catch(() => undefined)
 
   return run
 }
@@ -230,6 +246,13 @@ async function refreshOnce($: $) {
     const failures: string[] = []
     const read_ = await Promise.all(
       bindings.map(async binding => {
+        // A merged or abandoned PR no longer changes: it is not read again.
+        const settled = previous.find(pr => pr.id === binding.id && pr.status !== 'active')
+
+        if (settled) {
+          return settled
+        }
+
         try {
           return await ado.snapshot(binding.orgUrl, binding.id)
         } catch (error) {
@@ -246,7 +269,12 @@ async function refreshOnce($: $) {
     await rememberSnapshots($, prs)
 
     for (const pr of prs) {
-      await react($, ado, previous.find(one => one.id === pr.id) ?? null, pr)
+      // One PR's trouble must not stop the others being looked at.
+      try {
+        await react($, ado, previous.find(one => one.id === pr.id) ?? null, pr)
+      } catch (error) {
+        $.ui.toast(`PR #${pr.id}: ${messageOf(error)}`)
+      }
     }
   } catch (error) {
     await update($, errorAtom, () => messageOf(error)).catch(() => undefined)
@@ -261,6 +289,11 @@ async function react($: $, ado: Ado, previous: PrSnapshot | null, pr: PrSnapshot
   if (previous && previous.isAutoComplete !== pr.isAutoComplete) {
     $.ui.status(pr.isAutoComplete ? `PR #${pr.id}: auto-complete on` : undefined)
   }
+
+  // A thread that is resolved is forgotten, so one reopened later is handed over again.
+  const open = new Set(pr.comments.map(comment => `thread:${pr.id}:${comment.threadId}`))
+  await update($, handledAtom, list => list.filter(key => !key.startsWith(`thread:${pr.id}:`) || open.has(key)))
+
   if (pr.status !== 'active' || !(await read($, autoFixAtom))) {
     return
   }
@@ -275,15 +308,26 @@ async function fixFailures($: $, ado: Ado, pr: PrSnapshot, isForced = false) {
   const failed = pr.checks.filter(
     check => check.kind === 'ci' && check.state === 'failed' && check.buildId !== null && (isForced || !handled.includes(`build:${check.buildId}`)),
   )
+  let count = 0
 
   for (const check of failed) {
+    let failure: Awaited<ReturnType<Ado['buildFailure']>>
+
+    try {
+      failure = await ado.buildFailure(pr.orgUrl, pr.project, check.buildId as number)
+    } catch (error) {
+      // Not marked handled: the next read tries again.
+      $.ui.toast(`PR #${pr.id}: could not read build ${check.buildId}: ${messageOf(error)}`)
+      continue
+    }
+
     await update($, handledAtom, list => [...list, `build:${check.buildId}`].slice(-200))
-    const failure = await ado.buildFailure(pr.orgUrl, pr.project, check.buildId as number)
     $.ui.toast(`PR #${pr.id}: ${failure.pipeline} failed, asking Claude to fix it`)
     await $.prompt.submit({ text: buildFailurePrompt(pr, failure) })
+    count += 1
   }
 
-  return failed.length
+  return count
 }
 
 /** Hands the unresolved threads not yet handed over to Claude, in one prompt. */
@@ -492,8 +536,9 @@ export const register: Register = (on, options) => {
     })
 
     if (config.pollSeconds > 0) {
-      poll?.cancel()
-      poll = $.clock.every(config.pollSeconds * 1000, () => {
+      const state = await stateOf($)
+      state.poll?.cancel()
+      state.poll = $.clock.every(config.pollSeconds * 1000, () => {
         void (async () => {
           if (!(await read($, hiddenAtom))) {
             await refresh($)
@@ -506,8 +551,9 @@ export const register: Register = (on, options) => {
   })
 
   on('session.end', async ($, e, next) => {
-    poll?.cancel()
-    poll = null
+    const state = await stateOf($)
+    state.poll?.cancel()
+    state.poll = null
 
     return next(e)
   })
@@ -585,7 +631,7 @@ export const register: Register = (on, options) => {
     try {
       const ado = await adoFor($)
       const targets = input.buildId
-        ? [{ buildId: Number(input.buildId), project: prs[0]?.project ?? branch.project }]
+        ? [{ buildId: Number(input.buildId), project: prs.find(pr => pr.checks.some(c => c.buildId === Number(input.buildId)))?.project ?? prs[0]?.project ?? branch.project }]
         : prs
             .filter(pr => pr.status === 'active')
             .flatMap(pr => pr.checks.filter(c => c.state === 'failed' && c.buildId !== null).map(c => ({ buildId: c.buildId as number, project: pr.project })))
@@ -775,7 +821,7 @@ export const register: Register = (on, options) => {
       return (
         <Box key={key} flexDirection="row" gap={1}>
           {parts.map((part, i) => (
-            <Text bold color={themed[i]}>
+            <Text key={`${key}-${i}`} bold color={themed[i]}>
               {part.text}
             </Text>
           ))}
@@ -807,7 +853,7 @@ export const register: Register = (on, options) => {
       const policies = pr.checks.filter(check => check.kind === 'policy')
       const isActive = pr.status === 'active'
       const isReady =
-        isActive && pr.mergeStatus === 'succeeded' && pr.checks.every(c => !c.isBlocking || c.state === 'passed' || c.state === 'skipped')
+        isActive && pr.mergeStatus === 'succeeded' && pr.votes.rejected === 0 && pr.votes.waiting === 0 && pr.checks.every(c => !c.isBlocking || c.state === 'passed' || c.state === 'skipped')
       const votes = `${pr.votes.approved} approved, ${pr.votes.waiting} waiting${pr.votes.rejected ? `, ${pr.votes.rejected} rejected` : ''}`
 
       const lines = (key: string) =>

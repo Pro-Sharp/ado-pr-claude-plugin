@@ -54,6 +54,20 @@ export function azErrorOf(stderr: string): string {
   return text.replace(/^ERROR:\s*/i, '')
 }
 
+/** Sign-in and setup problems apply to every read, so they must not be swallowed as "nothing there". */
+const isSetupError = (error: unknown) => /^(Not signed in|The azure-devops extension|Could not start the Azure CLI)/.test(String((error as Error)?.message ?? error))
+
+const orEmpty = <T>(fallback: T) => (error: unknown): T => {
+  if (isSetupError(error)) {
+    throw error
+  }
+
+  return fallback
+}
+
+/** Azure DevOps answers a missing PR with TF401180 or a 404; anything else is a real failure. */
+const isNotFound = (error: unknown) => /TF401180|TF401019|does not exist|not found|404/i.test(String((error as Error)?.message ?? error))
+
 export function adoOf(host: AdoHost) {
   const git = async (args: readonly string[], timeoutMs = 30_000) => {
     const ran = await host.exec(['git', ...args], { cwd: host.cwd, timeoutMs })
@@ -85,7 +99,9 @@ export function adoOf(host: AdoHost) {
   /** Writes a UTF-8 file under .git for an `@file` argument, so no text crosses a shell. */
   const scratch = async (name: string, text: string) => {
     const gitDir = (await git(['rev-parse', '--absolute-git-dir'])).out
-    const path = `${gitDir}/ado-pr-${name}`
+    // Unique per call: sessions sharing a clone, or two calls at once, never share a file.
+    const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    const path = `${gitDir}/ado-pr-${unique}-${name}`
     await host.writeFile(path, text)
 
     return path
@@ -113,7 +129,7 @@ export function adoOf(host: AdoHost) {
 
     const has = async (sha: string) => (await git(['cat-file', '-e', `${sha}^{commit}`])).exitCode === 0
 
-    if (!(await has(source)) || !(await has(target))) {
+    if (pr.status === 'active' && (!(await has(source)) || !(await has(target)))) {
       await git(['fetch', '--quiet', 'origin', String(pr.sourceRefName), String(pr.targetRefName)], 60_000)
     }
 
@@ -153,7 +169,13 @@ export function adoOf(host: AdoHost) {
 
     /** Which repository a PR belongs to, or `null` when the organization has no such PR. */
     async describe(orgUrl: string, id: number): Promise<{ id: number; repo: string; project: string } | null> {
-      const pr = await az<Json>(['repos', 'pr', 'show', '--org', orgUrl, '--id', String(id)]).catch(() => null)
+      const pr = await az<Json>(['repos', 'pr', 'show', '--org', orgUrl, '--id', String(id)]).catch((error: unknown) => {
+        if (isNotFound(error)) {
+          return null
+        }
+
+        throw error
+      })
 
       return pr ? { id, repo: String(pr.repository?.name ?? ''), project: String(pr.repository?.project?.name ?? '') } : null
     },
@@ -165,10 +187,10 @@ export function adoOf(host: AdoHost) {
       const repoId = String(pr.repository?.id ?? '')
 
       const [evaluations, threads, stat] = await Promise.all([
-        az<Json[]>(['repos', 'pr', 'policy', 'list', '--org', orgUrl, '--id', String(id)]).catch(() => [] as Json[]),
+        az<Json[]>(['repos', 'pr', 'policy', 'list', '--org', orgUrl, '--id', String(id)]).catch(orEmpty([] as Json[])),
         invoke(orgUrl, 'git', 'pullRequestThreads', { project, repositoryId: repoId, pullRequestId: id })
           .then((r: Json) => (r?.value ?? []) as Json[])
-          .catch(() => [] as Json[]),
+          .catch(orEmpty([] as Json[])),
         diffStat(pr),
       ])
 
@@ -306,7 +328,9 @@ export function adoOf(host: AdoHost) {
 
     /** The signed-in person's PRs in a project, newest first. */
     async mine(orgUrl: string, project: string): Promise<Json[]> {
-      const me = (await az<Json>(['account', 'show']))?.user?.name
+      const account = (await az<Json>(['account', 'show']))?.user
+      // A service principal's name is an app id, which --creator does not resolve.
+      const me = account?.type === 'servicePrincipal' ? undefined : account?.name
 
       return (
         (await az<Json[]>([
