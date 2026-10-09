@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-10-09
+
+### Changed
+
+- The plugin's author is Pro-Sharp, with a contact email and website.
+
 ## [0.4.4] - 2026-10-09
 
 ### Changed
@@ -115,7 +121,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - Polling (`pollSeconds`), plus a refresh after `git push` / `checkout` / `az repos pr` commands.
 - On Windows, `az` starts in UTF-8 mode so accented names display correctly.
 
-[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Pro-Sharp/ado-pr-claude-plugin/compare/v0.4.1...v0.4.2
