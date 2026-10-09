@@ -1,6 +1,6 @@
 {
   "name": "ado-pr",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Azure DevOps pull requests above the prompt: the branch's PR, its +/- lines, build validation (CI) status, comments, auto-complete, auto-fix of failed builds and review comments, and a Create PR button, all through the Azure CLI (az repos / az pipelines).",
   "author": {
     "name": "Adam Kovacs"
